@@ -25,11 +25,11 @@ UNIT    := $(BUILD)/test_bobcat $(BUILD)/test_log $(BUILD)/test_args
 
 all: build
 
-# Generated header carrying the baked-in version and build info.
-$(BUILD)/version.h: Makefile
-	@mkdir -p $(BUILD)
-	@printf '#define MACHASH_VERSION "%s"\n#define MACHASH_BUILD "%s"\n' \
-		"$(VERSION)" "$(shell $(CC) --version | head -1)" > $@
+# Generated header carrying the baked-in version, build info, commit
+# hash, and build number. PHONY so every build gets a new number.
+.PHONY: $(BUILD)/version.h
+$(BUILD)/version.h:
+	@mkdir -p $(BUILD); if [ -f $(BUILD)/.build-number ]; then n=$$(( $$(cat $(BUILD)/.build-number) + 1 )); else n=1; fi; echo $$n > $(BUILD)/.build-number; commit=unknown; if git rev-parse HEAD >/dev/null 2>&1; then commit=$$(git rev-parse HEAD | cut -c1-12); git diff-index --quiet HEAD >/dev/null 2>&1 || commit="$${commit}-dirty"; fi; printf '#define MACHASH_VERSION "%s"\n#define MACHASH_BUILD "%s"\n#define MACHASH_COMMIT "%s"\n#define MACHASH_BUILD_NUMBER "%s"\n' "$(VERSION)" "$(shell $(CC) --version | head -1)" "$$commit" "$$n" > $@
 
 $(DIST)/$(PROG): $(SRC) $(HDR) $(BUILD)/version.h
 	@mkdir -p $(DIST)

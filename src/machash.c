@@ -30,6 +30,12 @@
 #ifndef MACHASH_BUILD
 #define MACHASH_BUILD "unknown"
 #endif
+#ifndef MACHASH_COMMIT
+#define MACHASH_COMMIT "unknown"
+#endif
+#ifndef MACHASH_BUILD_NUMBER
+#define MACHASH_BUILD_NUMBER "0"
+#endif
 
 // Bit positions in the 48-bit hash; the first octet is the MSB.
 #define BIT_MULTICAST 0x800000000000ULL
@@ -238,6 +244,8 @@ int main(int argc, char **argv) {
   if (version) {
     printf("%s %s\n", PROG, MACHASH_VERSION);
     printf("build: %s\n", MACHASH_BUILD);
+    printf("commit: %s\n", MACHASH_COMMIT);
+    printf("build number: %s\n", MACHASH_BUILD_NUMBER);
     return 0;
   }
 
