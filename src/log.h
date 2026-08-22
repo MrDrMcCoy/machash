@@ -25,6 +25,10 @@ int parse_log_level(const char *s);
 // Prints "prog: level: message" to stderr if level <= log_level.
 void log_msg(const char *prog, int level, const char *fmt, ...);
 
+// Prints "prog: error: message" to stderr regardless of log_level.
+// Usage errors must stay visible even when logging is turned off.
+void log_error(const char *prog, const char *fmt, ...);
+
 // Prints "prog: fatal: message" to stderr and exits with status 1.
 void log_abort(const char *prog, const char *fmt, ...)
     __attribute__((noreturn, format(printf, 2, 3)));

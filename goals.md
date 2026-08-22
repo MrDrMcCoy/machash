@@ -4,6 +4,7 @@
 - Write all code in the C language, using Cosmopolitan C as its standard library and cosmocc for the compiler. The library can be found at https://github.com/jart/cosmopolitan, and compiler at https://cosmo.zip/pub/cosmocc/. Cosmopolitan libc is ISC-licensed and does not require special handling, but should be attributed.
 - Resulting application should be a single file, static binary that can be executed on all targets that Cosmopolitan libc / cosmocc supports.
 - Use BSD 3-clause License for this project.
+- Binary name should be `machash`.
 - Accept string input either on standard input or as option flags `-s` and `--string`. Multi-line inputs should be treated as a single input. Leading and trailing whitespace should be stripped.
 - Perform 48-bit Bobcat hash on input string. Reference implementation is here: https://github.com/padolph/StampInfosec/blob/master/Chapter5/bobcat/bobcat.c
 - By default, format the output hash as a Unix-style, colon-delimeted string that can be used as a MAC address.

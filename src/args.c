@@ -29,6 +29,7 @@ static const opt_spec_t *find_short(const opt_spec_t *specs, int nspecs,
 }
 
 // Reports an error with a hint to the help flag; returns -1.
+// Errors bypass log_level: usage errors must stay visible.
 static int fail(const char *prog, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);

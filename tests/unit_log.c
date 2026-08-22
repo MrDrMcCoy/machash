@@ -101,6 +101,21 @@ int main(void) {
     r = read(fd, buf, sizeof(buf) - 1);
     T_CHECK(r == 0);
 
+    // log_error stays visible even at LOG_OFF.
+    log_level = LOG_OFF;
+    lseek(fd, 0, SEEK_SET);
+    ftruncate(fd, 0);
+    saved = capture_start(fd);
+    if (saved >= 0) {
+      log_error("t", "always %d", 7);
+      capture_stop(saved);
+    }
+    lseek(fd, 0, SEEK_SET);
+    memset(buf, 0, sizeof(buf));
+    r = read(fd, buf, sizeof(buf) - 1);
+    T_CHECK(r > 0);
+    T_CHECK(strstr(buf, "t: error: always 7") != NULL);
+
     // log_abort exits with status 1 and leaves a fatal message.
     log_level = LOG_FATAL;
     lseek(fd, 0, SEEK_SET);
