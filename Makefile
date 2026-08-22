@@ -10,7 +10,10 @@
 # Default to cosmocc (overridable on the command line).
 CC      = cosmocc
 CFLAGS  = -O2 -std=gnu11 -Wall -Wextra -Werror -Wshadow
-PREFIX  ?= $(HOME)/.local
+PREFIX  = $(HOME)/.local
+
+# Bake build and version info into the binary (see --version).
+VERSION := 0.1.0
 
 PROG    := machash
 DIST    := dist
@@ -22,9 +25,15 @@ UNIT    := $(BUILD)/test_bobcat $(BUILD)/test_log $(BUILD)/test_args
 
 all: build
 
-$(DIST)/$(PROG): $(SRC) $(HDR)
+# Generated header carrying the baked-in version and build info.
+$(BUILD)/version.h: Makefile
+	@mkdir -p $(BUILD)
+	@printf '#define MACHASH_VERSION "%s"\n#define MACHASH_BUILD "%s"\n' \
+		"$(VERSION)" "$(shell $(CC) --version | head -1)" > $@
+
+$(DIST)/$(PROG): $(SRC) $(HDR) $(BUILD)/version.h
 	@mkdir -p $(DIST)
-	$(CC) $(CFLAGS) -o $@ $(SRC)
+	$(CC) $(CFLAGS) -I$(BUILD) -o $@ $(SRC)
 
 build: $(DIST)/$(PROG)
 
