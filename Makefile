@@ -53,6 +53,7 @@ $(BUILD)/version.h:
 $(DIST)/$(PROG): $(SRC) $(HDR) $(BUILD)/version.h
 	@mkdir -p $(DIST)
 	$(CC) $(CFLAGS) -I$(BUILD) -o $@ $(SRC)
+	@rm -f $@.aarch64.elf $@.x86_64.elf $@.com.dbg
 
 build: $(DIST)/$(PROG)
 
