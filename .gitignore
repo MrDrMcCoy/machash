@@ -1,0 +1,4 @@
+# Build outputs are excluded from Git (see agents.md).
+dist/
+build/
+*.o
