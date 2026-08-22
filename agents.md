@@ -4,11 +4,13 @@
 
 - Maintain a Git repository for this code.
   - Initialize a Git repo here if one does not exist.
-  - Make a commit for each set of changes. Incrementally implement and commit as you go.
+  - Make a commit for each set of changes. Incrementally implement and
+    commit as you go.
   - Use branches for each new set of features.
   - Use tags for each release.
   - Do not push code to remotes.
-  - Any resulting builds, whether locally or via automation, should be excluded from Git commits.
+  - Any resulting builds, whether locally or via automation, should be
+    excluded from Git commits.
 - Create Gitea-compatible Github actions.
   - Lint every PR.
   - Run tests on every PR.
@@ -16,50 +18,79 @@
 - Follow best practices for code.
   - Follow Google's style guide for code.
   - Ensure full test coverage wherever possible.
-  - Maintain brief comments in code to describe what is happening and why.
+  - Maintain brief comments in code to describe what is happening and
+    why.
   - Use descriptive but short names for functions and variables.
   - Use indentation and newlines to organize data structures and flow.
   - Condense code into fewer lines if it does not harm readablity.
   - Align code to an 80-character line length.
 - Be careful with library imports.
-  - Prefer writing new code to library imports if the function to implement is small.
-  - Avoid library imports that have restrictive licenses. Do not use any code that is BSL licensed, except for the toolchain as necessary.
+  - Prefer writing new code to library imports if the function to
+    implement is small.
+  - Avoid library imports that have restrictive licenses. Do not use
+    any code that is BSL licensed, except for the toolchain as
+    necessary.
   - Prefer maximally-permissive licenses when choosing library imports.
-  - Prefer mature, actively-maintained libraries over immature or poorly-maintained code.
-  - Use established, reputable libraries for cryptographic code where possible.
-  - All libraries used along with their versions and licenses should be attributed in dependencies.md
+  - Prefer mature, actively-maintained libraries over immature or
+    poorly-maintained code.
+  - Use established, reputable libraries for cryptographic code where
+    possible.
+  - All libraries used along with their versions and licenses should be
+    attributed in dependencies.md
 - Maintain readme and supplementary documentation in markdown.
   - Describe project purpose clearly.
-  - Describe basic usage and defer details of advanced topics to dedicated markdown files.
+  - Describe basic usage and defer details of advanced topics to
+    dedicated markdown files.
   - Be brief, but accurate in all descriptions.
-  - Prefer linking to reputable external sources for explanations of general concepts.
+  - Prefer linking to reputable external sources for explanations of
+    general concepts.
   - Try to avoid common LLM-isms in phrasing.
-  - Unless necessary for a name or item being described, use plain ASCII and avoid uncommon punctuation / diacritical marks.
-  - Clearly explain towards the end of the readme that the code and documentation was partially written by an LLM, but carefully planned and reviewed by a human.
+  - Unless necessary for a name or item being described, use plain
+    ASCII and avoid uncommon punctuation / diacritical marks.
+  - Clearly explain towards the end of the readme that the code and
+    documentation was partially written by an LLM, but carefully
+    planned and reviewed by a human.
   - Keep all Markdown files aligned to a 80-character line width.
 - Implement robust argument parser.
   - Should handle positional arguments without dashes.
-  - Should be able to handle multiple single-dash, single-character arguments like `-aF`.
-  - Should be able to handle double-dash word arguments like `--loglevel`.
-  - Should be able to distinguish dashed global arguments before positional arguments from arguments following and specific to positional arguments.
-  - Should be able to detect various strings such as `yes`/`no`/`on`/`off`/`true`/`false`/`0`/`1` as boolean for boolean arguments.
-  - Should be able to use whitespace or `=` as value separator for arguments.
+  - Should be able to handle multiple single-dash, single-character
+    arguments like `-aF`.
+  - Should be able to handle double-dash word arguments like
+    `--loglevel`.
+  - Should be able to distinguish dashed global arguments before
+    positional arguments from arguments following and specific to
+    positional arguments.
+  - Should be able to detect various strings such as
+    `yes`/`no`/`on`/`off`/`true`/`false`/`0`/`1` as boolean for
+    boolean arguments.
+  - Should be able to use whitespace or `=` as value separator for
+    arguments.
 - Integrate robust help system.
-  - The tool should have help text that can be called with `-h` and `--help`
-  - Invalid input should be descriptive of what went wrong, then suggest relevant help arguments.
+  - The tool should have help text that can be called with `-h` and
+    `--help`
+  - Invalid input should be descriptive of what went wrong, then
+    suggest relevant help arguments.
   - All arguments should have their defaults explained.
-  - Positional arguments combined with help flags should explain the relevant features in detail.
+  - Positional arguments combined with help flags should explain the
+    relevant features in detail.
 - Implement robust logging.
-  - Handle errors and exceptions in every logical function and provide useful log text for what went wrong.
+  - Handle errors and exceptions in every logical function and provide
+    useful log text for what went wrong.
   - Include warning logs where appropriate.
-  - Include debug statements to help trace data through application functions.
-  - Include arguments `-L` and `--loglevel` to set log level by name or numerically.
+  - Include debug statements to help trace data through application
+    functions.
+  - Include arguments `-L` and `--loglevel` to set log level by name or
+    numerically.
 - Keep track of project progress.
   - Keep completed actions in `changelog.md`.
-  - Continuously write work in progress to in-flight.md so that other agents can resume interrupted work.
+  - Continuously write work in progress to in-flight.md so that other
+    agents can resume interrupted work.
   - Write planned work to `roadmap.md`.
   - Follow semantic versioning.
-- Bake commit hash, build number, version info into application, accessible with `--version` argument.
-- Missing tools should be installed to the user's home directory under `.local/`.
+- Bake commit hash, build number, version info into application,
+  accessible with `--version` argument.
+- Missing tools should be installed to the user's home directory under
+  `.local/`.
 - If byte packing order is a concern, prefer little-endian.
-- Follow further instructions listed under goals.md and fulfill any descriptions listed in the readme and documentation.
+- Follow further instructions listed under goals.md and fulfill any
+  descriptions listed in the readme and documentation.
