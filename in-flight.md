@@ -4,18 +4,18 @@ Records work in progress so another agent can resume interrupted work.
 
 ## Current
 
-- Implementing the core tool: logging (src/log.c), argument parser
-  (src/args.c), and the main program (src/machash.c).
+None. v0.1.0 is released (2026-08-22); see changelog.md.
 
 ## Notes for the next agent
 
-- Toolchain: cosmocc 4.0.2 in ~/.local/bin, build with `make build`.
-- Lint tools (shellcheck, cppcheck) are in ~/.local/bin; CI installs its own.
-- Bobcat hash (src/bobcat.c) is done and validated against the four
-  published reference vectors plus the independent oracle
-  (tests/ref/, certified by tests/ref/check_oracle.sh).
-- Expected hash values for common test strings are generated with
-  `printf '%s' STR | build/bobcat_ref` (e.g. "hello" -> 0x0fc2c1584259,
-  "" -> 0xe6be9fc25f39, "baz" -> 0x8ebeff920c64 which is multicast).
-- Design: input strings are hashed with 48-bit Bobcat; output is a MAC
-  address by default. See goals.md for the authoritative feature list.
+- Toolchain: cosmocc 4.0.2 in ~/.local/bin; `make build`,
+  `make test`, `make lint`.
+- Lint tools: shellcheck and cppcheck in ~/.local/bin (cppcheck via a
+  nix profile under ~/.local/nix).
+- Expected hash values in tests/integration.sh come from the
+  certified independent oracle (tests/ref/); regenerate with
+  `printf '%s' STR | build/bobcat_ref` if the oracle changes.
+- Keep all code and markdown within 80 columns (enforced by
+  `make lint-width`).
+- Workflows live in .github/workflows/ (Gitea scans that directory
+  as well as .gitea/workflows/).
