@@ -1,0 +1,54 @@
+# Gitea-compatible CI: lint and test on every pull request and on
+# pushes to master. Runs on Gitea Actions (github.* contexts and
+# actions/checkout are supported) and on GitHub Actions alike.
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain and lint tools
+        run: |
+          set -eu
+          if [ "$(id -u)" = "0" ]; then SUDO=""; else SUDO="sudo"; fi
+          $SUDO apt-get update -qq
+          $SUDO apt-get install -y -qq curl unzip cppcheck shellcheck
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o /tmp/cosmocc.zip \
+            https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip
+          unzip -o -j /tmp/cosmocc.zip bin/cosmocc -d "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/cosmocc"
+      - name: Lint
+        env:
+          PATH: $HOME/.local/bin:$PATH
+        run: make lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          set -eu
+          if [ "$(id -u)" = "0" ]; then SUDO=""; else SUDO="sudo"; fi
+          $SUDO apt-get update -qq
+          $SUDO apt-get install -y -qq curl unzip
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o /tmp/cosmocc.zip \
+            https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip
+          unzip -o -j /tmp/cosmocc.zip bin/cosmocc -d "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/cosmocc"
+      - name: Build
+        env:
+          PATH: $HOME/.local/bin:$PATH
+        run: make build
+      - name: Test
+        env:
+          PATH: $HOME/.local/bin:$PATH
+        run: make test
