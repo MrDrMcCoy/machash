@@ -17,6 +17,8 @@ check() {
   name=$1
   want=$2
   fmt=$3
+  # fmt holds the hard-coded vector bytes, not user input.
+  # shellcheck disable=SC2059
   got=$(printf "$fmt" | "$REF")
   if [ "$got" = "$want" ]; then
     echo "ok: $name"
