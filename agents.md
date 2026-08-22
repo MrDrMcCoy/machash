@@ -60,3 +60,4 @@
 - Missing tools should be installed to the user's home directory under `.local/`.
 - If byte packing order is ever a concern, prefer little-endian.
 - Follow further instructions listed under goals.md and fulfill any descriptions listed in the readme and documentation.
+- Bake build and version info into application, accessible with `--version` argument.

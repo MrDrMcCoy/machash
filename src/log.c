@@ -62,6 +62,15 @@ void log_msg(const char *prog, int level, const char *fmt, ...) {
   fputc('\n', stderr);
 }
 
+void log_error(const char *prog, const char *fmt, ...) {
+  fprintf(stderr, "%s: error: ", prog);
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  fputc('\n', stderr);
+}
+
 void log_abort(const char *prog, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
