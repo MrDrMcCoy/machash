@@ -64,12 +64,12 @@ test: build $(UNIT)
 
 lint: lint-c lint-sh
 
-lint-c:
+# The strict -Werror build doubles as a compile-time lint.
+lint-c: build
 	cppcheck -Isrc --enable=all --std=c11 -q --inline-suppr \
 		--suppress=missingIncludeSystem \
 		--suppress=checkersReport \
 		--suppress=normalCheckLevelMaxBranches src/ tests/
-	$(CC) $(CFLAGS) -fsyntax-only $(SRC)
 
 lint-sh:
 	shellcheck tests/integration.sh tests/ref/check_oracle.sh
