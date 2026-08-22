@@ -16,7 +16,20 @@
 #include "log.h"
 
 #define PROG "machash"
-#define VERSION "0.1.0"
+
+// Build info is baked in via build/version.h (Makefile-generated);
+// defaults apply when compiling without it.
+#if defined(__has_include)
+#if __has_include("version.h")
+#include "version.h"
+#endif
+#endif
+#ifndef MACHASH_VERSION
+#define MACHASH_VERSION "0.1.0"
+#endif
+#ifndef MACHASH_BUILD
+#define MACHASH_BUILD "unknown"
+#endif
 
 // Bit positions in the 48-bit hash; the first octet is the MSB.
 #define BIT_MULTICAST 0x800000000000ULL
@@ -145,7 +158,7 @@ static void hash_input(const char *raw, size_t raw_len, int plain,
 }
 
 static void print_help(int detailed) {
-  printf("machash %s - hash strings into MAC addresses\n\n", VERSION);
+  printf("machash %s - hash strings into MAC addresses\n\n", MACHASH_VERSION);
   printf(
       "Usage: machash [options] [string...]\n"
       "\n"
@@ -166,7 +179,7 @@ static void print_help(int detailed) {
       "  -L, --loglevel LVL Log level: off, fatal, error, warn, info,\n"
       "                     debug, or 0-5. (default: warn)\n"
       "  -h, --help         Show this help and exit.\n"
-      "  --version          Show the version and exit.\n"
+      "  --version          Show the version and build info, and exit.\n"
       "\n"
       "Positional arguments:\n"
       "  string             Strings to hash, in addition to -s. Options\n"
@@ -223,7 +236,8 @@ int main(int argc, char **argv) {
   }
   // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
   if (version) {
-    printf("%s %s\n", PROG, VERSION);
+    printf("%s %s\n", PROG, MACHASH_VERSION);
+    printf("build: %s\n", MACHASH_BUILD);
     return 0;
   }
 
