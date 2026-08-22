@@ -1,0 +1,71 @@
+# Gitea-compatible release: on every tag push, build and publish the
+# binary as a release asset. Uses the REST API with the GITEA_*/
+# GITHUB_* environment variables, so the same workflow works on
+# Gitea Actions and GitHub Actions.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          set -eu
+          if [ "$(id -u)" = "0" ]; then SUDO=""; else SUDO="sudo"; fi
+          $SUDO apt-get update -qq
+          $SUDO apt-get install -y -qq curl unzip
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL -o /tmp/cosmocc.zip \
+            https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip
+          unzip -o -j /tmp/cosmocc.zip bin/cosmocc -d "$HOME/.local/bin"
+          chmod +x "$HOME/.local/bin/cosmocc"
+      - name: Build and test
+        env:
+          PATH: $HOME/.local/bin:$PATH
+        run: |
+          make build
+          make test
+      - name: Create release
+        id: rel
+        run: |
+          set -eu
+          # Gitea provides GITEA_*; GitHub provides GITHUB_* variants.
+          TOKEN="${GITEA_TOKEN:-$GITHUB_TOKEN}"
+          SERVER="${GITEA_SERVER_URL:-$GITHUB_SERVER_URL}"
+          REPO="${GITEA_REPOSITORY:-$GITHUB_REPOSITORY}"
+          TAG="${GITEA_REF_NAME:-$GITHUB_REF_NAME}"
+          SHA="${GITEA_SHA:-$GITHUB_SHA}"
+          OUT="${GITEA_OUTPUT:-$GITHUB_OUTPUT}"
+          # Pull this tag's section out of changelog.md.
+          ver=${TAG#v}
+          body=$(awk -v v="$ver" \
+            '$0 ~ "^## \\[" v "\\] " { f = 1; next }
+             /^## \[/ && f { exit }
+             f' changelog.md)
+          [ -n "$body" ] || body="See changelog.md in the repository."
+          resp=$(curl -fsSL -X POST -H "Authorization: token $TOKEN" \
+            "$SERVER/api/v1/repos/$REPO/releases" \
+            --data-urlencode "tag_name=$TAG" \
+            --data-urlencode "name=machash $TAG" \
+            --data-urlencode "target_commitish=$SHA" \
+            --data-urlencode "body=$body")
+          rid=$(printf '%s' "$resp" \
+            | sed -n 's/.*"id":[[:space:]]*\([0-9][0-9]*\).*/\1/p')
+          [ -n "$rid" ] || { echo "no release id in: $resp" >&2; exit 1; }
+          printf 'release_id=%s\n' "$rid" >> "$OUT"
+      - name: Upload binary
+        run: |
+          set -eu
+          TOKEN="${GITEA_TOKEN:-$GITHUB_TOKEN}"
+          SERVER="${GITEA_SERVER_URL:-$GITHUB_SERVER_URL}"
+          REPO="${GITEA_REPOSITORY:-$GITHUB_REPOSITORY}"
+          curl -fsSL -X POST -H "Authorization: token $TOKEN" \
+            "$SERVER/api/v1/repos/$REPO/releases/${{ steps.rel.outputs.release_id }}/assets" \
+            -F "name=machash" \
+            -F "label=single-file static universal binary" \
+            --data-binary "@dist/machash"
