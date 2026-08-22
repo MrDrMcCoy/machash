@@ -20,6 +20,7 @@
   - Use descriptive but short names for functions and variables.
   - Use indentation and newlines to organize data structures and flow.
   - Condense code into fewer lines if it does not harm readablity.
+  - Align code to an 80-character line length.
 - Be careful with library imports.
   - Prefer writing new code to library imports if the function to implement is small.
   - Avoid library imports that have restrictive licenses. Do not use any code that is BSL licensed, except for the toolchain as necessary.
@@ -35,10 +36,11 @@
   - Try to avoid common LLM-isms in phrasing.
   - Unless necessary for a name or item being described, use plain ASCII and avoid uncommon punctuation / diacritical marks.
   - Clearly explain towards the end of the readme that the code and documentation was partially written by an LLM, but carefully planned and reviewed by a human.
+  - Keep all Markdown files aligned to a 80-character line width.
 - Implement robust argument parser.
   - Should handle positional arguments without dashes.
   - Should be able to handle multiple single-dash, single-character arguments like `-aF`.
-  - Should be able to handle double-dash word arguments like `--log-level`.
+  - Should be able to handle double-dash word arguments like `--loglevel`.
   - Should be able to distinguish dashed global arguments before positional arguments from arguments following and specific to positional arguments.
   - Should be able to detect various strings such as `yes`/`no`/`on`/`off`/`true`/`false`/`0`/`1` as boolean for boolean arguments.
   - Should be able to use whitespace or `=` as value separator for arguments.
@@ -57,7 +59,7 @@
   - Continuously write work in progress to in-flight.md so that other agents can resume interrupted work.
   - Write planned work to `roadmap.md`.
   - Follow semantic versioning.
-- Missing tools should be installed to the user's home directory under `.local/`.
-- If byte packing order is ever a concern, prefer little-endian.
-- Follow further instructions listed under goals.md and fulfill any descriptions listed in the readme and documentation.
 - Bake commit hash, build number, version info into application, accessible with `--version` argument.
+- Missing tools should be installed to the user's home directory under `.local/`.
+- If byte packing order is a concern, prefer little-endian.
+- Follow further instructions listed under goals.md and fulfill any descriptions listed in the readme and documentation.
