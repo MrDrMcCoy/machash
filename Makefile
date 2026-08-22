@@ -1,0 +1,62 @@
+# machash build rules.
+#
+# Targets:
+#   build   - build dist/machash (single-file static universal binary)
+#   test    - build and run unit tests, then the integration suite
+#   lint    - static analysis of C sources and shell scripts
+#   install - copy the binary into $(PREFIX)/bin
+#   clean   - remove build outputs
+
+CC      ?= cosmocc
+CFLAGS  ?= -O2 -std=gnu11 -Wall -Wextra -Werror -Wshadow
+PREFIX  ?= $(HOME)/.local
+
+PROG    := machash
+DIST    := dist
+BUILD   := build
+
+SRC     := src/bobcat.c src/log.c src/args.c src/machash.c
+HDR     := src/bobcat.h src/log.h src/args.h
+UNIT    := $(BUILD)/test_bobcat $(BUILD)/test_log $(BUILD)/test_args
+
+all: build
+
+$(DIST)/$(PROG): $(SRC) $(HDR) | $(DIST)
+	$(CC) $(CFLAGS) -o $@ $(SRC)
+
+build: $(DIST)/$(PROG)
+
+# Unit tests: each driver links the sources under test.
+$(BUILD)/test_bobcat: tests/unit_bobcat.c tests/test.h src/bobcat.c src/bobcat.h | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc -o $@ tests/unit_bobcat.c src/bobcat.c
+
+$(BUILD)/test_log: tests/unit_log.c tests/test.h src/log.c src/log.h | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc -o $@ tests/unit_log.c src/log.c
+
+$(BUILD)/test_args: tests/unit_args.c tests/test.h src/args.c src/args.h src/log.c src/log.h | $(BUILD)
+	$(CC) $(CFLAGS) -Isrc -o $@ tests/unit_args.c src/args.c src/log.c
+
+test: build $(UNIT)
+	$(BUILD)/test_bobcat
+	$(BUILD)/test_log
+	$(BUILD)/test_args
+	./tests/integration.sh
+
+lint: lint-c lint-sh
+
+lint-c:
+	cppcheck -Isrc --enable=all --std=c11 -q --inline-suppr src/ tests/
+	$(CC) $(CFLAGS) -fsyntax-only $(SRC)
+
+lint-sh:
+	shellcheck tests/integration.sh
+
+install: build
+	mkdir -p $(PREFIX)/bin
+	cp $(DIST)/$(PROG) $(PREFIX)/bin/$(PROG)
+
+clean:
+	rm -rf $(DIST) $(BUILD)
+
+$(DIST) $(BUILD):
+	mkdir - $@
