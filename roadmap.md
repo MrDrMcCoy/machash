@@ -11,8 +11,8 @@ Planned work for machash. Completed items move to changelog.md.
 ## Later
 
 - [ ] Fuzz harness for the argument parser and hash
-- [ ] Per-architecture release assets (cosmocc already emits a universal binary)
 - [ ] Man page
+- [ ] Packages for Homebrew, Debian, OpenSuSE, Fedora, and Arch
 
 ## Done
 
