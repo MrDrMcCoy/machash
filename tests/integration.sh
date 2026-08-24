@@ -268,6 +268,34 @@ run -pu -s baz
 check_out "clustered flags with plain" '0ebeff920c64'
 check_code "clustered flags with plain" 0
 
+run --0x -s hello
+check_out "0x prefix" '0x0fc2c1584259'
+check_code "0x prefix" 0
+check_no_err "0x prefix" 'warning'
+
+run -S -s hello
+check_out "swapped octets" '59:42:58:c1:c2:0f'
+check_code "swapped octets" 0
+
+run -p --0x -s hello
+check_code "two formats rejected" 1
+check_err "two formats rejected" 'only one output format'
+
+run -p -S -s hello
+check_code "two formats rejected (plain swap)" 1
+
+run --0x -s baz
+check_out "0x prefix raw format no warning" '0x8ebeff920c64'
+check_no_err "0x prefix raw format no warning" 'warning'
+
+run -S -s baz
+check_out "swapped multicast result" '64:0c:92:ff:be:8e'
+check_err "swapped multicast result" 'multicast MAC address'
+
+run -S -u -s baz
+check_out "swapped unicast result" '64:0c:92:ff:be:0e'
+check_no_err "swapped unicast result" 'warning'
+
 # --- option parsing rules ---
 run -- -p
 check_out "-- terminator" '61:02:d2:98:ff:2f'

@@ -1,10 +1,11 @@
 // machash: hash arbitrary strings into MAC addresses.
 //
 // Each input string is hashed with the 48-bit Bobcat hash and printed
-// as a colon-separated MAC address by default, or as a raw hex number
-// with -p/--plain. Inputs come from -s/--string and positional
-// arguments; with no inputs, all of stdin is one input. Line mode
-// (-l/--lines, -f/--file) hashes one line at a time.
+// as a colon-separated MAC address by default, or as raw hex with
+// -p/--plain or --0x, or with reversed octets by -S/--swap. Inputs
+// come from -s/--string and positional arguments; with no inputs, all
+// of stdin is one input. Line mode (-l/--lines, -f/--file) hashes one
+// line at a time.
 
 #include <ctype.h>
 #include <errno.h>
@@ -46,11 +47,15 @@
 #define STDIN_CHUNK 65536
 // Buffer size for a formatted MAC address, in bytes (18 + NUL).
 #define MAC_STR_SIZE 19
+// Number of octets in a MAC address.
+#define MAC_OCTETS 6
 
 // Output formats for the digest.
 typedef enum {
-  OUT_MAC,   // colon-separated MAC address
-  OUT_PLAIN, // raw 12 hex digits
+  OUT_MAC,     // colon-separated MAC address
+  OUT_PLAIN,   // raw 12 hex digits
+  OUT_HEX0X,   // 0x prefix plus 12 hex digits
+  OUT_SWAPPED, // octets in reversed order
 } output_fmt;
 
 // Bit operations applied to the digest after hashing; combine with |.
@@ -162,11 +167,12 @@ static int read_lines(FILE *f, struct inputs *in) {
   return count;
 }
 
-// Format h as a colon-separated MAC address; out needs 19 bytes.
+// Format h as a colon-separated MAC address; out needs MAC_STR_SIZE
+// bytes.
 static void format_mac(unsigned long long h, char *out) {
   char *p = out;
-  for (int i = 5; i >= 0; i--) {
-    if (i != 5) {
+  for (int i = MAC_OCTETS - 1; i >= 0; i--) {
+    if (i != MAC_OCTETS - 1) {
       *p++ = ':';
     }
     p += sprintf(p, "%02llx", (h >> (8 * i)) & 0xff);
@@ -174,8 +180,33 @@ static void format_mac(unsigned long long h, char *out) {
   *p = 0;
 }
 
-static void hash_input(const char *raw, size_t raw_len, output_fmt fmt,
-                       bit_ops bits) {
+// Format the digest into out (MAC_STR_SIZE bytes) according to fmt.
+static void format_digest(unsigned long long h, output_fmt fmt, char *out) {
+  if (fmt == OUT_PLAIN) {
+    sprintf(out, "%012llx", h);
+    return;
+  }
+  if (fmt == OUT_HEX0X) {
+    sprintf(out, "0x%012llx", h);
+    return;
+  }
+  char mac[MAC_STR_SIZE];
+  format_mac(h, mac);
+  if (fmt == OUT_SWAPPED) {
+    for (int i = 0; i < MAC_OCTETS; i++) {
+      int src = (MAC_OCTETS - 1 - i) * 3;
+      out[i * 3] = mac[src];
+      out[i * 3 + 1] = mac[src + 1];
+      out[i * 3 + 2] = (i == MAC_OCTETS - 1) ? 0 : ':';
+    }
+    return;
+  }
+  strcpy(out, mac);
+}
+
+// Hash one raw input and apply the bit operations.
+static unsigned long long digest_input(const char *raw, size_t raw_len,
+                                       bit_ops bits) {
   const char *in = raw;
   size_t len = raw_len;
   // Strip leading and trailing whitespace.
@@ -199,22 +230,24 @@ static void hash_input(const char *raw, size_t raw_len, output_fmt fmt,
     h &= ~BIT_MULTICAST;
   }
   log_msg(PROG, LOG_DEBUG, "hashed %zu byte input -> 0x%012llx", len, h);
-  if (fmt == OUT_PLAIN) {
-    printf("%012llx\n", h);
-    return;
-  }
-  char mac[MAC_STR_SIZE];
-  format_mac(h, mac);
-  printf("%s\n", mac);
-  if ((bits & BITS_UNICAST) == 0 && (h & BIT_MULTICAST)) {
+  return h;
+}
+
+static void hash_input(const char *raw, size_t raw_len, output_fmt fmt,
+                       bit_ops bits) {
+  unsigned long long h = digest_input(raw, raw_len, bits);
+  char out[MAC_STR_SIZE];
+  format_digest(h, fmt, out);
+  printf("%s\n", out);
+  if ((fmt == OUT_MAC || fmt == OUT_SWAPPED) &&
+      (bits & BITS_UNICAST) == 0 && (h & BIT_MULTICAST)) {
     log_msg(PROG, LOG_WARN,
-            "%s is a multicast MAC address (the low bit of the first "
-            "octet is set). Multicast addresses are group addresses, "
-            "not individual device addresses, so a host using one "
-            "would have its traffic treated as group traffic. Re-run "
-            "with -u/--unicast to clear the bit, or -p/--plain if you "
-            "only need the raw hash.",
-            mac);
+            "%s is a multicast MAC address. Multicast addresses are "
+            "group addresses, not device addresses. A host that uses "
+            "one has its traffic treated as group traffic. Re-run "
+            "with -u/--unicast to clear the bit, or -p/--plain if "
+            "you only need the raw hash.",
+            out);
   }
 }
 
@@ -233,6 +266,10 @@ static void print_help(int detailed) {
       "  -p, --plain        Print the raw 48-bit hash as 12 lowercase\n"
       "                     hex digits, no separators, no 0x prefix.\n"
       "                     (default: off)\n"
+      "  -S, --swap        Print the six octets in reversed order.\n"
+      "                     (default: off)\n"
+      "  --0x              Print the raw hash with a 0x prefix.\n"
+      "                     (default: off)\n"
       "  -u, --unicast      Clear the multicast bit so the result is\n"
       "                     always a unicast MAC address. (default: off)\n"
       "  --local            Set the locally-administered bit of the\n"
@@ -245,6 +282,9 @@ static void print_help(int detailed) {
       "                     debug, or 0-5. (default: warn)\n"
       "  -h, --help         Show this help and exit.\n"
       "  --version          Show the version and build info, and exit.\n"
+      "\n"
+      "Output formats are mutually exclusive: the default MAC form,\n"
+      "-p/--plain, --0x, and -S/--swap.\n"
       "\n"
       "Positional arguments:\n"
       "  string             Strings to hash, in addition to -s. Options\n"
@@ -290,11 +330,13 @@ int main(int argc, char **argv) {
   static struct inputs inputs;
   static struct opt_state state;
   int plain = 0, unicast = 0, local = 0, help = 0, version = 0;
-  int lines = 0;
+  int lines = 0, hex0x = 0, swap = 0;
   const opt_spec_t specs[] = {
       {.long_name = "string", .short_name = 's', .takes_value = 1,
        .cb = add_input, .user = &inputs},
       {.long_name = "plain", .short_name = 'p', .bool_dest = &plain},
+      {.long_name = "0x", .bool_dest = &hex0x},
+      {.long_name = "swap", .short_name = 'S', .bool_dest = &swap},
       {.long_name = "unicast", .short_name = 'u', .bool_dest = &unicast},
       {.long_name = "local", .bool_dest = &local},
       {.long_name = "lines", .short_name = 'l', .bool_dest = &lines},
@@ -305,7 +347,7 @@ int main(int argc, char **argv) {
       {.long_name = "help", .short_name = 'h', .bool_dest = &help},
       {.long_name = "version", .bool_dest = &version},
   };
-  if (parse_opts(PROG, argc, argv, specs, 9, add_input, &inputs) != 0) {
+  if (parse_opts(PROG, argc, argv, specs, 11, add_input, &inputs) != 0) {
     return 1;
   }
   // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
@@ -377,7 +419,22 @@ int main(int argc, char **argv) {
     }
   }
 
-  output_fmt fmt = plain ? OUT_PLAIN : OUT_MAC;
+  int nfmt = plain + hex0x + swap;
+  if (nfmt > 1) {
+    log_error(PROG,
+              "only one output format can be selected; try '%s --help' "
+              "for usage",
+              PROG);
+    return 1;
+  }
+  output_fmt fmt = OUT_MAC;
+  if (plain) {
+    fmt = OUT_PLAIN;
+  } else if (hex0x) {
+    fmt = OUT_HEX0X;
+  } else if (swap) {
+    fmt = OUT_SWAPPED;
+  }
   bit_ops bits = BITS_NONE;
   if (unicast) {
     bits |= BITS_UNICAST;
