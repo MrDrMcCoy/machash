@@ -11,11 +11,10 @@ Planned work for machash. Completed items move to changelog.md.
 - [ ] Fuzz harness for the argument parser and hash
 - [ ] Man page
 - [ ] Packages for Homebrew, Debian, OpenSuSE, Fedora, and Arch
-- [ ] Binary as Single-file, multi-arch OCI container, pushed to
-  Github Packages as part of automated builds
 
 ## Done
 
+- 0.3.1 - fixed and simplified CI workflow. Still broken.
 - 0.3.0 - line-oriented input mode (-l, -f), --0x and -S output
   formats, --check mode, build-essential in CI. See changelog.md.
 - 0.2.0 - compliance release: enum parameters, named spec constants,

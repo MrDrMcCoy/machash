@@ -6,50 +6,34 @@ name: ci
 on:
   push:
     branches: [master]
+    tags: ["v*"]
   pull_request:
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install toolchain and lint tools
-        run: |
-          set -eu
-          if [ "$(id -u)" = "0" ]; then SUDO=""; else SUDO="sudo"; fi
-          $SUDO apt-get update -qq
-          $SUDO apt-get install -y -qq build-essential \
-            curl unzip cppcheck shellcheck
-          mkdir -p "$HOME/.local/bin"
-          curl -fsSL -o /tmp/cosmocc.zip \
-            https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip
-          unzip -o -j /tmp/cosmocc.zip bin/cosmocc -d "$HOME/.local/bin"
-          chmod +x "$HOME/.local/bin/cosmocc"
-      - name: Lint
-        env:
-          PATH: $HOME/.local/bin:$PATH
-        run: make lint
-
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install toolchain
+      - name: Run tests
         run: |
-          set -eu
-          if [ "$(id -u)" = "0" ]; then SUDO=""; else SUDO="sudo"; fi
-          $SUDO apt-get update -qq
-          $SUDO apt-get install -y -qq curl unzip
-          mkdir -p "$HOME/.local/bin"
-          curl -fsSL -o /tmp/cosmocc.zip \
-            https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip
-          unzip -o -j /tmp/cosmocc.zip bin/cosmocc -d "$HOME/.local/bin"
-          chmod +x "$HOME/.local/bin/cosmocc"
-      - name: Build
-        env:
-          PATH: $HOME/.local/bin:$PATH
-        run: make build
-      - name: Test
-        env:
-          PATH: $HOME/.local/bin:$PATH
-        run: make test
+          set -Eeuxo pipefail
+          export PATH=${HOME}/.local/bin:${PATH}
+          sudo apt update
+          sudo apt install -y \
+             curl cppcheck libarchive-tools shellcheck
+          mkdir -p ${HOME}/.local/bin
+          curl -fsSL \
+            https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip |
+              bsdtar -xC ${HOME}/.local
+          ln -sv ${HOME}/.local/libexec/gcc/$(uname -m)-linux-cosmo/*/* ${HOME}/.local/bin/
+          base_n="${HOME}/.local/bin/$(uname -m)-linux-cosmo-"
+          for f in ${base_n}* ; do
+            ln -sv ${f} ${f//${base_n}/}
+          done
+          sudo curl -fsSLo /usr/bin/ape https://cosmo.zip/pub/cosmos/bin/ape-$(uname -m).elf
+          sudo chmod -R +x /usr/bin/ape ${HOME}/.local/bin ${HOME}/.local/libexec/gcc/$(uname -m)-linux-cosmo/*/*
+          sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' > /proc/sys/fs/binfmt_misc/register"
+          sudo sh -c "echo ':APE-jart:M::jartsr::/usr/bin/ape:' >/proc/sys/fs/binfmt_misc/register"
+          make lint
+          make build
+          make test

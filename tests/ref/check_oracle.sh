@@ -2,7 +2,7 @@
 # Validate the independent Bobcat oracle (build/bobcat_ref) against
 # the four published reference vectors. This certifies the oracle
 # before its output is used as expected values in integration.sh.
-set -eu
+set -Eeuxo pipefail
 
 CC=${CC:-cosmocc}
 REF=build/bobcat_ref

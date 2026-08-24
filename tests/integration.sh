@@ -3,7 +3,7 @@
 #
 # Expected values were generated with the independent Bobcat oracle
 # (tests/ref/check_oracle.sh) and hard-coded below.
-set -u
+set -Eeuo pipefail
 
 BIN=dist/machash
 if [ ! -x "$BIN" ]; then

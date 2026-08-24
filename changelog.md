@@ -7,6 +7,12 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-08-24
+
+### Changed
+
+- Updated CI/CD pipeline with consolidation and fixes. Still broken in Github.
+
 ## [0.3.0] - 2026-08-24
 
 ### Added
