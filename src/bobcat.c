@@ -37,7 +37,8 @@ static void f_inner(int abc[3], int z, int o, int t, int x, int m) {
   int aa = abc[z], bb = abc[o], cc = abc[t];
   cc = (cc ^ x) & WORD_MASK;
   aa = (aa - (sbox[0][cc & 0xf] ^ sbox[1][(cc >> 8) & 0xf])) & WORD_MASK;
-  bb = (bb + (sbox[1][(cc >> 4) & 0xf] ^ sbox[0][(cc >> 12) & 0xf])) & WORD_MASK;
+  bb = (bb + (sbox[1][(cc >> 4) & 0xf] ^
+              sbox[0][(cc >> 12) & 0xf])) & WORD_MASK;
   abc[z] = aa;
   abc[o] = (bb * m) & WORD_MASK;
   abc[t] = cc;
