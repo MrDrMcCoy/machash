@@ -4,7 +4,7 @@ Records work in progress so another agent can resume interrupted work.
 
 ## Current
 
-None. v0.2.0 is released (2026-08-24). See changelog.md.
+None. v0.3.0 is released (2026-08-24). See changelog.md.
 
 ## Notes for the next agent
 

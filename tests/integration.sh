@@ -442,7 +442,7 @@ check_outc "help with inputs" 'String inputs:'
 
 run --version
 check_code "version" 0
-check_outc "version" 'machash 0.2.0'
+check_outc "version" 'machash 0.3.0'
 check_outc "version" 'build:'
 check_outc "version" 'commit:'
 check_outc "version" 'build number:'

@@ -7,6 +7,28 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-24
+
+### Added
+
+- Line-oriented input mode: -l/--lines reads each line of stdin as
+  one input. -f/--file reads each line of a file. Each line loses
+  its newline and is stripped like other inputs.
+- Output formats: --0x prints the hash with a 0x prefix.
+  -S/--swap prints the six octets in reversed order.
+- --check MAC mode: compares each input to MAC (after applying
+  -u/--local) and prints match or no match per input. The exit
+  status is 0 if all inputs match, 1 otherwise.
+- CI workflows install build-essential in the action environment.
+  The runners failed on make before this fix.
+
+### Changed
+
+- The multicast warning no longer names the first octet, so it
+  stays correct for swapped output. It applies to both address-like
+  formats (MAC and swapped) and is suppressed for the raw formats
+  (-p, --0x) as before.
+
 ## [0.2.0] - 2026-08-24
 
 ### Changed

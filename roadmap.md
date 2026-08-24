@@ -2,12 +2,6 @@
 
 Planned work for machash. Completed items move to changelog.md.
 
-## 0.3.0
-
-- [ ] Line-oriented input mode: hash one line at a time from a file or stdin
-- [ ] More output formats (0x prefix, byte-swapped octet order)
-- [ ] `--check` mode to verify an existing MAC against a string
-
 ## Later
 
 - [ ] Add `-n`, `--hostname` arguments to generate a MAC address
@@ -17,9 +11,13 @@ Planned work for machash. Completed items move to changelog.md.
 - [ ] Fuzz harness for the argument parser and hash
 - [ ] Man page
 - [ ] Packages for Homebrew, Debian, OpenSuSE, Fedora, and Arch
+- [ ] Binary as Single-file, multi-arch OCI container, pushed to
+  Github Packages as part of automated builds
 
 ## Done
 
+- 0.3.0 - line-oriented input mode (-l, -f), --0x and -S output
+  formats, --check mode, build-essential in CI. See changelog.md.
 - 0.2.0 - compliance release: enum parameters, named spec constants,
   null-terminated error text, simple-English docs, wider tests. See
   changelog.md.
