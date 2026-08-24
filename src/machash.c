@@ -41,6 +41,11 @@
 #define BIT_MULTICAST 0x800000000000ULL
 #define BIT_LOCAL 0x400000000000ULL
 
+// Read size for stdin, in bytes.
+#define STDIN_CHUNK 65536
+// Buffer size for a formatted MAC address, in bytes (18 + NUL).
+#define MAC_STR_SIZE 19
+
 // Output formats for the digest.
 typedef enum {
   OUT_MAC,   // colon-separated MAC address
@@ -92,13 +97,13 @@ static int set_loglevel(const char *v, void *user) {
 
 // Read all of stdin; returns a malloc'd buffer or aborts on error.
 static char *read_stdin_all(size_t *len_out) {
-  size_t cap = 65536, len = 0;
+  size_t cap = STDIN_CHUNK, len = 0;
   char *buf = malloc(cap);
   if (!buf) {
     log_abort(PROG, "out of memory reading stdin");
   }
   for (;;) {
-    if (len + 65536 > cap) {
+    if (len + STDIN_CHUNK > cap) {
       cap *= 2;
       char *nb = realloc(buf, cap);
       if (!nb) {
@@ -106,9 +111,9 @@ static char *read_stdin_all(size_t *len_out) {
       }
       buf = nb;
     }
-    size_t r = fread(buf + len, 1, 65536, stdin);
+    size_t r = fread(buf + len, 1, STDIN_CHUNK, stdin);
     len += r;
-    if (r < 65536) {
+    if (r < STDIN_CHUNK) {
       if (ferror(stdin)) {
         free(buf);
         log_abort(PROG, "failed to read stdin: %s", strerror(errno));
@@ -161,7 +166,7 @@ static void hash_input(const char *raw, size_t raw_len, output_fmt fmt,
     printf("%012llx\n", h);
     return;
   }
-  char mac[19];
+  char mac[MAC_STR_SIZE];
   format_mac(h, mac);
   printf("%s\n", mac);
   if ((bits & BITS_UNICAST) == 0 && (h & BIT_MULTICAST)) {
