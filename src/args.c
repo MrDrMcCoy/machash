@@ -103,14 +103,14 @@ int parse_opts(const char *prog, int argc, char **argv,
     for (const char *p = a + 1; *p; p++) {
       const opt_spec_t *sp = find_short(specs, nspecs, *p);
       if (!sp) {
-        char opt[2] = {'-', *p};
+        char opt[3] = {'-', *p, 0};
         return fail(prog, "unknown option '%s'", opt);
       }
       if (sp->takes_value) {
         const char *val = p + 1;
         if (!*val) {
           if (i + 1 >= argc) {
-            char opt[2] = {'-', *p};
+            char opt[3] = {'-', *p, 0};
             return fail(prog, "option '%s' requires a value", opt);
           }
           val = argv[++i];

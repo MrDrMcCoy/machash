@@ -218,10 +218,14 @@ check_err "unknown long option" '--help'
 run -z
 check_code "unknown short option" 1
 check_err "unknown short option" "unknown option '-z'"
+# The closing quote must follow the option name directly. A stray byte
+# in the name (an unterminated buffer) would break this match.
+check_err "unknown short option" "-z'; try"
 
 run -s
 check_code "missing value" 1
 check_err "missing value" 'requires a value'
+check_err "missing value" "-s' requires"
 
 run --string
 check_code "missing value (long)" 1
