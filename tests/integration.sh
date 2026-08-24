@@ -35,6 +35,18 @@ feed() {
   rm -f "$R_ERR_FILE"
 }
 
+# Like feed, but $1 is a printf format (for CRLF and the like).
+feedf() {
+  fmt=$1
+  shift
+  R_ERR_FILE=$(mktemp) || exit 1
+  # shellcheck disable=SC2059
+  R_OUT=$(printf "$fmt" | "$BIN" "$@" 2>"$R_ERR_FILE")
+  R_CODE=$?
+  R_ERR=$(cat "$R_ERR_FILE")
+  rm -f "$R_ERR_FILE"
+}
+
 check_out() {
   if [ "$R_OUT" = "$2" ]; then
     pass=$((pass + 1))
@@ -167,6 +179,55 @@ check_code "inputs past the initial buffer" 0
 run -s '  hello  '
 check_out "flag value whitespace stripped" '0f:c2:c1:58:42:59'
 check_code "flag value whitespace stripped" 0
+
+# --- line mode ---
+feed 'hello
+world
+' -l
+check_out "line mode one hash per line" '0f:c2:c1:58:42:59
+dd:d4:5c:8a:55:86'
+check_code "line mode one hash per line" 0
+
+feedf 'hello\r\nworld\r\n' -l
+check_out "line mode CRLF stripped" '0f:c2:c1:58:42:59
+dd:d4:5c:8a:55:86'
+
+feedf 'a\n\nb\n' -l
+check_out "line mode blank line" 'b4:d6:87:2d:49:9f
+e6:be:9f:c2:5f:39
+00:77:60:99:ed:a1'
+check_err "line mode blank line" 'empty after stripping'
+
+feedf 'a\nb' -l
+check_out "line mode final line without newline" 'b4:d6:87:2d:49:9f
+00:77:60:99:ed:a1'
+
+feed 'hello' -lp
+check_out "line mode with plain" '0fc2c1584259'
+
+TMPF=$(mktemp) || exit 1
+printf 'hello\nworld\n' > "$TMPF"
+run -f "$TMPF"
+check_out "file mode one hash per line" '0f:c2:c1:58:42:59
+dd:d4:5c:8a:55:86'
+check_code "file mode one hash per line" 0
+rm -f "$TMPF"
+
+run -f /nonexistent-machash-test
+check_code "file mode missing file" 1
+check_err "file mode missing file" 'cannot open file'
+
+run -l -s hello
+check_code "line mode with -s rejected" 1
+check_err "line mode with -s rejected" 'line mode cannot be combined'
+
+run -l -f /dev/null
+check_code "lines and file rejected" 1
+check_err "lines and file rejected" 'only one of --lines or --file'
+
+feed '' -l
+check_code "line mode empty stdin" 1
+check_err "line mode empty stdin" 'no input provided'
 
 # --- output modes ---
 run -p -s hello

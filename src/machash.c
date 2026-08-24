@@ -3,7 +3,8 @@
 // Each input string is hashed with the 48-bit Bobcat hash and printed
 // as a colon-separated MAC address by default, or as a raw hex number
 // with -p/--plain. Inputs come from -s/--string and positional
-// arguments; with no inputs, all of stdin is one input.
+// arguments; with no inputs, all of stdin is one input. Line mode
+// (-l/--lines, -f/--file) hashes one line at a time.
 
 #include <ctype.h>
 #include <errno.h>
@@ -66,6 +67,11 @@ struct inputs {
   int cap;
 };
 
+// Options that need a callback to store their value.
+struct opt_state {
+  const char *file;
+};
+
 static int add_input(const char *s, void *user) {
   struct inputs *in = user;
   if (in->count == in->cap) {
@@ -78,6 +84,12 @@ static int add_input(const char *s, void *user) {
     in->cap = ncap;
   }
   in->items[in->count++] = s;
+  return 0;
+}
+
+static int set_file(const char *v, void *user) {
+  struct opt_state *st = user;
+  st->file = v;
   return 0;
 }
 
@@ -123,6 +135,31 @@ static char *read_stdin_all(size_t *len_out) {
   }
   *len_out = len;
   return buf;
+}
+
+// Read f line by line and add each line (without its newline) to the
+// input list. Returns the number of lines read; aborts on error.
+static int read_lines(FILE *f, struct inputs *in) {
+  char *line = NULL;
+  size_t cap = 0;
+  ssize_t n;
+  int count = 0;
+  while ((n = getline(&line, &cap, f)) != -1) {
+    if (n > 0 && line[n - 1] == '\n') {
+      line[n - 1] = 0;
+    }
+    const char *copy = strdup(line);
+    if (!copy) {
+      log_abort(PROG, "out of memory reading a line");
+    }
+    add_input(copy, in);
+    count++;
+  }
+  free(line);
+  if (ferror(f)) {
+    log_abort(PROG, "failed to read lines: %s", strerror(errno));
+  }
+  return count;
 }
 
 // Format h as a colon-separated MAC address; out needs 19 bytes.
@@ -200,6 +237,10 @@ static void print_help(int detailed) {
       "                     always a unicast MAC address. (default: off)\n"
       "  --local            Set the locally-administered bit of the\n"
       "                     result. (default: off)\n"
+      "  -l, --lines        Read stdin as lines. Each line is one\n"
+      "                     input. (default: off)\n"
+      "  -f, --file FILE    Read FILE as lines. Each line is one\n"
+      "                     input. (default: none)\n"
       "  -L, --loglevel LVL Log level: off, fatal, error, warn, info,\n"
       "                     debug, or 0-5. (default: warn)\n"
       "  -h, --help         Show this help and exit.\n"
@@ -232,25 +273,39 @@ static void print_help(int detailed) {
         "  stripping is hashed as the empty string, with a warning.\n"
         "  Data piped on stdin is read whole, treated as a single\n"
         "  input, and stripped the same way. Inputs may contain any\n"
-        "  bytes, including newlines in the middle of the string.\n");
+        "  bytes, including newlines in the middle of the string.\n"
+        "\n"
+        "Line input:\n"
+        "  -l/--lines reads each line of stdin as one input.\n"
+        "  -f/--file reads each line of FILE as one input.\n"
+        "  A line loses its newline, and leading and trailing\n"
+        "  whitespace is stripped as for other inputs. A line that is\n"
+        "  empty after stripping hashes the empty string, with a\n"
+        "  warning. Line mode cannot be combined with -s or\n"
+        "  positional arguments, and -l and -f cannot be combined.\n");
   }
 }
 
 int main(int argc, char **argv) {
   static struct inputs inputs;
+  static struct opt_state state;
   int plain = 0, unicast = 0, local = 0, help = 0, version = 0;
+  int lines = 0;
   const opt_spec_t specs[] = {
       {.long_name = "string", .short_name = 's', .takes_value = 1,
        .cb = add_input, .user = &inputs},
       {.long_name = "plain", .short_name = 'p', .bool_dest = &plain},
       {.long_name = "unicast", .short_name = 'u', .bool_dest = &unicast},
       {.long_name = "local", .bool_dest = &local},
+      {.long_name = "lines", .short_name = 'l', .bool_dest = &lines},
+      {.long_name = "file", .short_name = 'f', .takes_value = 1,
+       .cb = set_file, .user = &state},
       {.long_name = "loglevel", .short_name = 'L', .takes_value = 1,
        .cb = set_loglevel},
       {.long_name = "help", .short_name = 'h', .bool_dest = &help},
       {.long_name = "version", .bool_dest = &version},
   };
-  if (parse_opts(PROG, argc, argv, specs, 7, add_input, &inputs) != 0) {
+  if (parse_opts(PROG, argc, argv, specs, 9, add_input, &inputs) != 0) {
     return 1;
   }
   // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
@@ -267,9 +322,49 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
+  if (lines && state.file != NULL) {
+    log_error(PROG,
+              "only one of --lines or --file can be given; try '%s "
+              "--help' for usage",
+              PROG);
+    return 1;
+  }
+  int line_mode = lines || state.file != NULL;
+  if (line_mode && inputs.count > 0) {
+    log_error(PROG,
+              "line mode cannot be combined with -s or positional "
+              "arguments; try '%s --help' for usage",
+              PROG);
+    return 1;
+  }
+
   char *stdin_buf = NULL;
   size_t stdin_len = 0;
-  if (inputs.count == 0) {
+  if (line_mode) {
+    FILE *f = stdin;
+    if (state.file != NULL) {
+      f = fopen(state.file, "r");
+      if (!f) {
+        log_error(PROG,
+                  "cannot open file '%s': %s; try '%s --help' for "
+                  "usage",
+                  state.file, strerror(errno), PROG);
+        return 1;
+      }
+    }
+    read_lines(f, &inputs);
+    if (state.file != NULL) {
+      fclose(f);
+    }
+    if (inputs.count == 0) {
+      log_error(PROG,
+                "no input provided; pipe lines on stdin or use "
+                "-f/--file; try '%s --help' for usage",
+                PROG);
+      return 1;
+    }
+  } else if (inputs.count == 0) {
     stdin_buf = read_stdin_all(&stdin_len);
     if (stdin_len == 0) {
       free(stdin_buf);
@@ -282,7 +377,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
   output_fmt fmt = plain ? OUT_PLAIN : OUT_MAC;
   bit_ops bits = BITS_NONE;
   if (unicast) {
@@ -297,6 +391,12 @@ int main(int argc, char **argv) {
     }
   } else {
     hash_input(stdin_buf, stdin_len, fmt, bits);
+  }
+  if (line_mode) {
+    // Line mode owns its input strings; free each one.
+    for (int i = 0; i < inputs.count; i++) {
+      free((void *)inputs.items[i]);
+    }
   }
   free(stdin_buf);
   free(inputs.items);
