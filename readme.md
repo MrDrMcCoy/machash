@@ -30,6 +30,14 @@ arguments, in the order they appear. If you give no strings, machash
 reads all of stdin as one input. Multi-line data stays a single
 input. machash strips leading and trailing whitespace.
 
+Line mode reads one input per line. `-l/--lines` reads the lines of
+stdin. `-f/--file FILE` reads the lines of a file. Each line loses
+its newline and is stripped like other inputs.
+
+`--check MAC` compares the inputs to an existing MAC address and
+prints match or no match per input. See docs/check.md for the
+details.
+
 Common invocations:
 
     echo hello | machash            # stdin
@@ -37,6 +45,11 @@ Common invocations:
     machash hello world             # positional inputs
     machash -pu -s hello            # plain, unicast
     machash --local -s "hello"      # locally-administered
+    echo hello | machash -l         # stdin lines
+    machash -f names.txt            # each line of a file
+    machash --0x -s hello           # 0x0fc2c1584259
+    machash -S -s hello             # 59:42:58:c1:c2:0f
+    machash --check 0f:c2:c1:58:42:59 hello   # match, exit 0
 
 Run `machash --help` for the full option list with defaults.
 
@@ -46,14 +59,23 @@ Run `machash --help` for the full option list with defaults.
 |---|---|---|
 | `-s`, `--string STR` | none | hash STR (repeatable) |
 | `-p`, `--plain` | off | raw 12 hex digits, no separators or prefix |
+| `-S`, `--swap` | off | print the six octets in reversed order |
+| `--0x` | off | raw hash with a 0x prefix |
 | `-u`, `--unicast` | off | clear the multicast bit |
 | `--local` | off | set the locally-administered bit |
+| `-l`, `--lines` | off | each line of stdin is one input |
+| `-f`, `--file FILE` | none | each line of FILE is one input |
+| `--check MAC` | off | print match or no match per input |
 | `-L`, `--loglevel LVL` | warn | off/fatal/error/warn/info/debug, or 0-5 |
 | `-h`, `--help` | - | show help text |
 | `--version` | - | show version, build, commit, build number |
 
+Output formats are mutually exclusive. `--check` is a mode and
+cannot be combined with a format flag.
+
 See docs/outputs.md for the bit semantics and the multicast warning,
-and docs/hash.md for the Bobcat algorithm details.
+docs/check.md for check mode, and docs/hash.md for the Bobcat
+algorithm details.
 
 ## Testing and development
 
