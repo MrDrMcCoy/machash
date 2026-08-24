@@ -1,4 +1,4 @@
-# machash - Hash arbitrary strings in to MAC addresses
+# machash - Hash arbitrary strings into MAC addresses
 
 machash hashes input strings with the 48-bit Bobcat hash and prints
 the result as a colon-separated MAC address:
@@ -6,9 +6,9 @@ the result as a colon-separated MAC address:
     $ machash -s hello
     0f:c2:c1:58:42:59
 
-The address is fake but structurally valid; it is useful for deriving
-a stable, deterministic MAC address from any string. With
-`-p/--plain` the tool doubles as a general 48-bit hash printer.
+The address is fake, but it has the form of a valid MAC address. It
+is useful for deriving a stable, deterministic MAC address from any
+string. With `-p/--plain` the tool prints a general 48-bit hash.
 
 ## Building
 
@@ -26,9 +26,9 @@ The result is dist/machash. `make install` copies it to
     machash [options] [string...]
 
 Strings come from `-s/--string` (repeatable) and from positional
-arguments, in the order they appear. If no strings are given, all of
-stdin is read as one input; multi-line data stays a single input, and
-leading/trailing whitespace is stripped.
+arguments, in the order they appear. If you give no strings, machash
+reads all of stdin as one input. Multi-line data stays a single
+input. machash strips leading and trailing whitespace.
 
 Common invocations:
 
@@ -60,13 +60,14 @@ and docs/hash.md for the Bobcat algorithm details.
     make test    # unit + oracle + integration tests
     make lint    # cppcheck, shellcheck, 80-column check
 
-Expected test values are generated with the independent Bobcat oracle
-in tests/ref/ (certified by tests/ref/check_oracle.sh).
+Expected test values come from the independent Bobcat oracle in
+tests/ref/. tests/ref/check_oracle.sh certifies the oracle against
+the published vectors.
 
 ## License
 
-BSD 3-clause; see LICENSE. Dependencies and their licenses are listed
-in dependencies.md.
+The license is BSD 3-clause. See LICENSE. The dependencies and their
+licenses are listed in dependencies.md.
 
 ---
 

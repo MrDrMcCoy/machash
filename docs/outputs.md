@@ -2,12 +2,12 @@
 
 ## MAC address (default)
 
-The 48-bit digest is printed as six colon-separated lowercase hex
+machash prints the 48-bit digest as six colon-separated lowercase hex
 octets, most significant octet first:
 
     0f:c2:c1:58:42:59
 
-This is the Unix-style form; see the Wikipedia article on
+This is the Unix-style form. See the Wikipedia article on
 [MAC addresses][mac] for the octet and bit layout.
 
 ## Plain
@@ -29,19 +29,20 @@ on [MAC addresses][mac]):
 
 machash controls these bits as follows:
 
-- `-u/--unicast` clears only the multicast bit, converting the result
-  to the nearest unicast address.
-- `--local` sets the locally-administered bit; it does not touch the
+- `-u/--unicast` clears only the multicast bit. The result becomes
+  the nearest unicast address.
+- `--local` sets the locally-administered bit. It does not touch the
   multicast bit.
 - Neither flag changes the rest of the digest.
 
 ## Multicast warning
 
-When the resulting MAC address is non-unicast and neither `-p` nor
-`-u` was given, machash prints the address to stdout and a warning to
-stderr explaining that multicast addresses are group addresses, and
-how to get a unicast one (`-u`) or just the raw hash (`-p`).
-`--local` does not suppress this warning. No warning is emitted for
-locally-administered (vendor-unassigned) addresses.
+If the resulting MAC address is non-unicast and you give neither
+`-p` nor `-u`, machash prints the address to stdout. It also prints
+a warning to stderr. The warning explains that multicast addresses
+are group addresses. It shows how to get a unicast address (`-u`)
+or the raw hash (`-p`). `--local` does not suppress this warning.
+machash emits no warning for locally-administered
+(vendor-unassigned) addresses.
 
 [mac]: https://en.wikipedia.org/wiki/MAC_address

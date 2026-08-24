@@ -15,24 +15,24 @@ https://github.com/padolph/StampInfosec/blob/master/Chapter5/bobcat/bobcat.c
 - The state is three 16-bit words (a, b, c), initialized to 0xface,
   0xe961, 0x041d.
 - Each block passes through three outer rounds with multipliers 5, 7,
-  and 9. An outer round applies eight inner rounds, each mixing one
-  message word into the state through two S-boxes (each mapping 4
-  bits to 16 bits); between outer rounds a key schedule re-derives
-  the message words.
+  and 9. An outer round applies eight inner rounds. Each inner round
+  mixes one message word into the state through two S-boxes. Each
+  S-box maps 4 bits to 16 bits. Between outer rounds, a key schedule
+  re-derives the message words.
 - After the final round the pre-round state is folded back in
   (feedforward).
 - The 48-bit digest is (a << 32) | (b << 16) | c.
 
 ## Validation
 
-- src/bobcat.c is tested against the four vectors published with the
-  reference (tests/unit_bobcat.c).
-- tests/ref/bobcat_ref.c is an independently structured second
-  implementation; tests/ref/check_oracle.sh checks it against the
-  same four vectors before its output is used as expected values in
-  the integration suite.
-- The empty-input digest (0xe6be9fc25f39) was taken from the
-  certified oracle.
+- tests/unit_bobcat.c tests src/bobcat.c against the four vectors
+  published with the reference.
+- tests/ref/bobcat_ref.c is a second implementation with a different
+  structure. tests/ref/check_oracle.sh checks it against the same
+  four vectors. The integration suite uses the certified output as
+  expected values.
+- The empty-input digest (0xe6be9fc25f39) comes from the certified
+  oracle.
 
 For background on the Tiger construction, see Wikipedia's article on
 [Tiger (hash function)][tiger].
