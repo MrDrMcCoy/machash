@@ -5,7 +5,8 @@
 // -p/--plain or --0x, or with reversed octets by -S/--swap. Inputs
 // come from -s/--string and positional arguments; with no inputs, all
 // of stdin is one input. Line mode (-l/--lines, -f/--file) hashes one
-// line at a time.
+// line at a time. Check mode (--check MAC) compares inputs against
+// an existing MAC address.
 
 #include <ctype.h>
 #include <errno.h>
@@ -75,6 +76,8 @@ struct inputs {
 // Options that need a callback to store their value.
 struct opt_state {
   const char *file;
+  int check_enabled;
+  unsigned long long check_value;
 };
 
 static int add_input(const char *s, void *user) {
@@ -95,6 +98,61 @@ static int add_input(const char *s, void *user) {
 static int set_file(const char *v, void *user) {
   struct opt_state *st = user;
   st->file = v;
+  return 0;
+}
+
+// Returns the value of a hex digit, or -1.
+static int hexval(char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  }
+  if (c >= 'a' && c <= 'f') {
+    return c - 'a' + 10;
+  }
+  if (c >= 'A' && c <= 'F') {
+    return c - 'A' + 10;
+  }
+  return -1;
+}
+
+// Parse a MAC address of the form aa:bb:cc:dd:ee:ff. Returns 0 and
+// stores the 48-bit value in out, or returns -1.
+static int parse_mac(const char *s, unsigned long long *out) {
+  unsigned long long v = 0;
+  const char *p = s;
+  for (int i = 0; i < MAC_OCTETS; i++) {
+    int hi = hexval(p[0]);
+    int lo = hexval(p[1]);
+    if (hi < 0 || lo < 0) {
+      return -1;
+    }
+    v = (v << 8) | (unsigned long long)(hi << 4) | (unsigned long long)lo;
+    p += 2;
+    if (i < MAC_OCTETS - 1) {
+      if (*p != ':') {
+        return -1;
+      }
+      p++;
+    }
+  }
+  if (*p != 0) {
+    return -1;
+  }
+  *out = v;
+  return 0;
+}
+
+static int set_check(const char *v, void *user) {
+  struct opt_state *st = user;
+  if (parse_mac(v, &st->check_value) != 0) {
+    log_error(PROG,
+              "invalid MAC address '%s' (expected six colon-separated "
+              "hex octets, for example 0f:c2:c1:58:42:59); try '%s "
+              "--help' for usage",
+              v, PROG);
+    return -1;
+  }
+  st->check_enabled = 1;
   return 0;
 }
 
@@ -251,6 +309,15 @@ static void hash_input(const char *raw, size_t raw_len, output_fmt fmt,
   }
 }
 
+// Compare one raw input against the MAC. Returns 1 on a match.
+static int check_input(const char *raw, size_t raw_len,
+                       unsigned long long mac, bit_ops bits) {
+  unsigned long long h = digest_input(raw, raw_len, bits);
+  int match = (h == mac);
+  printf("%s\n", match ? "match" : "no match");
+  return match;
+}
+
 static void print_help(int detailed) {
   printf("machash %s - hash strings into MAC addresses\n\n", MACHASH_VERSION);
   printf(
@@ -278,13 +345,16 @@ static void print_help(int detailed) {
       "                     input. (default: off)\n"
       "  -f, --file FILE    Read FILE as lines. Each line is one\n"
       "                     input. (default: none)\n"
+      "  --check MAC       Print match or no match for each input,\n"
+      "                     compared against MAC. (default: off)\n"
       "  -L, --loglevel LVL Log level: off, fatal, error, warn, info,\n"
       "                     debug, or 0-5. (default: warn)\n"
       "  -h, --help         Show this help and exit.\n"
       "  --version          Show the version and build info, and exit.\n"
       "\n"
       "Output formats are mutually exclusive: the default MAC form,\n"
-      "-p/--plain, --0x, and -S/--swap.\n"
+      "-p/--plain, --0x, and -S/--swap. --check is a mode and cannot\n"
+      "be combined with a format flag.\n"
       "\n"
       "Positional arguments:\n"
       "  string             Strings to hash, in addition to -s. Options\n"
@@ -322,7 +392,14 @@ static void print_help(int detailed) {
         "  whitespace is stripped as for other inputs. A line that is\n"
         "  empty after stripping hashes the empty string, with a\n"
         "  warning. Line mode cannot be combined with -s or\n"
-        "  positional arguments, and -l and -f cannot be combined.\n");
+        "  positional arguments, and -l and -f cannot be combined.\n"
+        "\n"
+        "Check mode:\n"
+        "  --check MAC compares each input to MAC after applying\n"
+        "  -u/--local, as in normal output mode. It prints match or\n"
+        "  no match, one line per input, in input order. The exit\n"
+        "  status is 0 if all inputs match, 1 if any input does not\n"
+        "  match. The multicast warning is not printed in check mode.\n");
   }
 }
 
@@ -342,12 +419,14 @@ int main(int argc, char **argv) {
       {.long_name = "lines", .short_name = 'l', .bool_dest = &lines},
       {.long_name = "file", .short_name = 'f', .takes_value = 1,
        .cb = set_file, .user = &state},
+      {.long_name = "check", .takes_value = 1, .cb = set_check,
+       .user = &state},
       {.long_name = "loglevel", .short_name = 'L', .takes_value = 1,
        .cb = set_loglevel},
       {.long_name = "help", .short_name = 'h', .bool_dest = &help},
       {.long_name = "version", .bool_dest = &version},
   };
-  if (parse_opts(PROG, argc, argv, specs, 11, add_input, &inputs) != 0) {
+  if (parse_opts(PROG, argc, argv, specs, 12, add_input, &inputs) != 0) {
     return 1;
   }
   // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
@@ -427,6 +506,13 @@ int main(int argc, char **argv) {
               PROG);
     return 1;
   }
+  if (state.check_enabled && nfmt > 0) {
+    log_error(PROG,
+              "--check cannot be combined with an output format flag; "
+              "try '%s --help' for usage",
+              PROG);
+    return 1;
+  }
   output_fmt fmt = OUT_MAC;
   if (plain) {
     fmt = OUT_PLAIN;
@@ -442,7 +528,21 @@ int main(int argc, char **argv) {
   if (local) {
     bits |= BITS_LOCAL;
   }
-  if (inputs.count > 0) {
+  int all_match = 1;
+  if (state.check_enabled) {
+    if (inputs.count > 0) {
+      for (int i = 0; i < inputs.count; i++) {
+        all_match =
+            check_input(inputs.items[i], strlen(inputs.items[i]),
+                        state.check_value, bits) &&
+            all_match;
+      }
+    } else {
+      all_match =
+          check_input(stdin_buf, stdin_len, state.check_value, bits) &&
+          all_match;
+    }
+  } else if (inputs.count > 0) {
     for (int i = 0; i < inputs.count; i++) {
       hash_input(inputs.items[i], strlen(inputs.items[i]), fmt, bits);
     }
@@ -457,5 +557,5 @@ int main(int argc, char **argv) {
   }
   free(stdin_buf);
   free(inputs.items);
-  return 0;
+  return state.check_enabled && !all_match ? 1 : 0;
 }

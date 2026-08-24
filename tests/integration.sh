@@ -296,6 +296,73 @@ run -S -u -s baz
 check_out "swapped unicast result" '64:0c:92:ff:be:0e'
 check_no_err "swapped unicast result" 'warning'
 
+# --- check mode ---
+run --check 0f:c2:c1:58:42:59 -s hello
+check_out "check match" 'match'
+check_code "check match" 0
+
+run --check 0f:c2:c1:58:42:59 -s baz
+check_out "check no match" 'no match'
+check_code "check no match" 1
+
+run --check 0F:C2:C1:58:42:59 -s hello
+check_out "check uppercase MAC" 'match'
+check_code "check uppercase MAC" 0
+
+run --check 0f:c2:c1:58:42:59 -s hello -s baz
+check_out "check mixed results" 'match
+no match'
+check_code "check mixed results" 1
+
+run --check 0f:c2:c1:58:42:59 -s hello -s hello
+check_out "check all match" 'match
+match'
+check_code "check all match" 0
+
+feed 'hello' --check 0f:c2:c1:58:42:59
+check_out "check stdin input" 'match'
+check_code "check stdin input" 0
+
+run --check 0e:be:ff:92:0c:64 -u -s baz
+check_out "check applies unicast" 'match'
+check_code "check applies unicast" 0
+
+run --check 8e:be:ff:92:0c:64 -u -s baz
+check_out "check unicast changed result" 'no match'
+check_code "check unicast changed result" 1
+
+run --check 0f:c2:c1:58:42:59 --local -s hello
+check_out "check applies local bit" 'no match'
+check_code "check applies local bit" 1
+
+feed 'hello
+world' --check 0f:c2:c1:58:42:59 -l
+check_out "check line mode" 'match
+no match'
+check_code "check line mode" 1
+
+run --check 0f:c2 -s hello
+check_code "check invalid MAC short" 1
+check_err "check invalid MAC short" 'invalid MAC address'
+
+run --check 0f:c2:c1:58:42:59:aa -s hello
+check_code "check invalid MAC long" 1
+check_err "check invalid MAC long" 'invalid MAC address'
+
+run --check 0f-c2-c1-58-42-59 -s hello
+check_code "check invalid MAC separator" 1
+
+run --check 0f:c2:c1:58:42:5g -s hello
+check_code "check invalid MAC digit" 1
+
+run --check= -s hello
+check_code "check empty MAC" 1
+check_err "check empty MAC" 'invalid MAC address'
+
+run --check 0f:c2:c1:58:42:59 -p -s hello
+check_code "check with format rejected" 1
+check_err "check with format rejected" '--check cannot be combined'
+
 # --- option parsing rules ---
 run -- -p
 check_out "-- terminator" '61:02:d2:98:ff:2f'
