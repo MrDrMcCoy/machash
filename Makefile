@@ -13,7 +13,7 @@ CFLAGS  = -O2 -std=gnu11 -Wall -Wextra -Werror -Wshadow
 PREFIX  = $(HOME)/.local
 
 # Bake build and version info into the binary (see --version).
-VERSION := 0.1.0
+VERSION := 0.2.0
 
 PROG    := machash
 DIST    := dist

@@ -7,6 +7,29 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-24
+
+### Changed
+
+- `hash_input()` takes an output-format enum and a bit-operation
+  bitmask instead of three boolean parameters.
+- Spec values and recurring values are named constants in
+  src/bobcat.c and src/machash.c.
+- Integration tests cover inputs past the initial buffer capacity
+  and whitespace-padded flag values.
+- agents.md is wrapped to 80 columns. Before this fix, `make lint`
+  failed on the file.
+- The markdown documentation follows simple-English rules: sentences
+  under 25 words, no semicolons, no passive voice with a known
+  agent.
+
+### Fixed
+
+- The error text for an unknown short option printed a stray stack
+  byte after the option name in some builds. The same defect
+  affected the missing-value message. The option-name buffer is now
+  null-terminated.
+
 ## [0.1.0] - 2026-08-22
 
 ### Added

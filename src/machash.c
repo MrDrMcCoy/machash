@@ -282,6 +282,7 @@ int main(int argc, char **argv) {
     }
   }
 
+  // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
   output_fmt fmt = plain ? OUT_PLAIN : OUT_MAC;
   bit_ops bits = BITS_NONE;
   if (unicast) {
