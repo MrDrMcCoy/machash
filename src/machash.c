@@ -41,6 +41,19 @@
 #define BIT_MULTICAST 0x800000000000ULL
 #define BIT_LOCAL 0x400000000000ULL
 
+// Output formats for the digest.
+typedef enum {
+  OUT_MAC,   // colon-separated MAC address
+  OUT_PLAIN, // raw 12 hex digits
+} output_fmt;
+
+// Bit operations applied to the digest after hashing; combine with |.
+typedef enum {
+  BITS_NONE = 0,
+  BITS_UNICAST = 1, // clear the multicast bit
+  BITS_LOCAL = 2,   // set the locally-administered bit
+} bit_ops;
+
 // Ordered input strings (-s values and positionals, in command order).
 struct inputs {
   const char **items;
@@ -119,8 +132,8 @@ static void format_mac(unsigned long long h, char *out) {
   *p = 0;
 }
 
-static void hash_input(const char *raw, size_t raw_len, int plain,
-                       int unicast, int local) {
+static void hash_input(const char *raw, size_t raw_len, output_fmt fmt,
+                       bit_ops bits) {
   const char *in = raw;
   size_t len = raw_len;
   // Strip leading and trailing whitespace.
@@ -137,21 +150,21 @@ static void hash_input(const char *raw, size_t raw_len, int plain,
             "empty string");
   }
   unsigned long long h = bobcat48(in, len);
-  if (local) {
+  if (bits & BITS_LOCAL) {
     h |= BIT_LOCAL;
   }
-  if (unicast) {
+  if (bits & BITS_UNICAST) {
     h &= ~BIT_MULTICAST;
   }
   log_msg(PROG, LOG_DEBUG, "hashed %zu byte input -> 0x%012llx", len, h);
-  if (plain) {
+  if (fmt == OUT_PLAIN) {
     printf("%012llx\n", h);
     return;
   }
   char mac[19];
   format_mac(h, mac);
   printf("%s\n", mac);
-  if (!unicast && (h & BIT_MULTICAST)) {
+  if ((bits & BITS_UNICAST) == 0 && (h & BIT_MULTICAST)) {
     log_msg(PROG, LOG_WARN,
             "%s is a multicast MAC address (the low bit of the first "
             "octet is set). Multicast addresses are group addresses, "
@@ -264,13 +277,20 @@ int main(int argc, char **argv) {
     }
   }
 
+  output_fmt fmt = plain ? OUT_PLAIN : OUT_MAC;
+  bit_ops bits = BITS_NONE;
+  if (unicast) {
+    bits |= BITS_UNICAST;
+  }
+  if (local) {
+    bits |= BITS_LOCAL;
+  }
   if (inputs.count > 0) {
     for (int i = 0; i < inputs.count; i++) {
-      hash_input(inputs.items[i], strlen(inputs.items[i]), plain, unicast,
-                 local);
+      hash_input(inputs.items[i], strlen(inputs.items[i]), fmt, bits);
     }
   } else {
-    hash_input(stdin_buf, stdin_len, plain, unicast, local);
+    hash_input(stdin_buf, stdin_len, fmt, bits);
   }
   free(stdin_buf);
   free(inputs.items);
