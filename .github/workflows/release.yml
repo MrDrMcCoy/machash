@@ -18,7 +18,7 @@ jobs:
           set -eu
           if [ "$(id -u)" = "0" ]; then SUDO=""; else SUDO="sudo"; fi
           $SUDO apt-get update -qq
-          $SUDO apt-get install -y -qq curl unzip
+          $SUDO apt-get install -y -qq build-essential curl unzip
           mkdir -p "$HOME/.local/bin"
           curl -fsSL -o /tmp/cosmocc.zip \
             https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip
