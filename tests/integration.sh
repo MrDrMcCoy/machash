@@ -150,6 +150,24 @@ run -s ''
 check_out "empty string input" 'e6:be:9f:c2:5f:39'
 check_err "empty string input" 'empty after stripping'
 
+# More inputs than the initial buffer capacity (8). The list must grow.
+run a b c d e f g h i j
+check_out "inputs past the initial buffer" "b4:d6:87:2d:49:9f
+00:77:60:99:ed:a1
+7c:14:5d:b2:d3:de
+a0:47:3f:81:5a:f9
+4b:e5:b7:ae:9b:24
+72:15:32:b8:5e:8a
+14:20:32:d3:fb:cd
+96:f4:41:52:66:d5
+51:c0:00:c3:24:b1
+92:97:76:fc:d3:2e"
+check_code "inputs past the initial buffer" 0
+
+run -s '  hello  '
+check_out "flag value whitespace stripped" '0f:c2:c1:58:42:59'
+check_code "flag value whitespace stripped" 0
+
 # --- output modes ---
 run -p -s hello
 check_out "plain" '0fc2c1584259'
