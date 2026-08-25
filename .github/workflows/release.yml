@@ -1,0 +1,89 @@
+# Gitea-compatible release: on every v* tag, build the binary and
+# the source tarball, then publish both as release assets. The
+# environment variable fallbacks (GITEA_*/GITHUB_*) make the same
+# file work on Gitea Actions and GitHub Actions.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          set -Eeuxo pipefail
+          export PATH=${HOME}/.local/bin:${PATH}
+          sudo apt update
+          sudo apt install -y curl libarchive-tools
+          mkdir -p ${HOME}/.local/bin
+          curl -fsSL \
+            https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip |
+              bsdtar -xC ${HOME}/.local
+          ln -sv ${HOME}/.local/libexec/gcc/$(uname -m)-linux-cosmo/*/* ${HOME}/.local/bin/
+          base_n="${HOME}/.local/bin/$(uname -m)-linux-cosmo-"
+          for f in ${base_n}* ; do
+            ln -sv ${f} ${f//${base_n}/}
+          done
+          sudo curl -fsSLo /usr/bin/ape \
+            https://cosmo.zip/pub/cosmos/bin/ape-$(uname -m).elf
+          sudo chmod -R +x /usr/bin/ape ${HOME}/.local/bin \
+            ${HOME}/.local/libexec/gcc/$(uname -m)-linux-cosmo/*/*
+          sudo sh -c "echo ':APE:M::MZqFpD::/usr/bin/ape:' \
+            > /proc/sys/fs/binfmt_misc/register"
+          sudo sh -c "echo ':APE-jart:M::jartsr::/usr/bin/ape:' \
+            >/proc/sys/fs/binfmt_misc/register"
+      - name: Build
+        run: |
+          set -Eeuxo pipefail
+          export PATH=${HOME}/.local/bin:${PATH}
+          make build
+          make dist
+      - name: Create release
+        id: rel
+        run: |
+          set -eu
+          # Gitea provides GITEA_*; GitHub provides GITHUB_* variants.
+          TOKEN="${GITEA_TOKEN:-$GITHUB_TOKEN}"
+          SERVER="${GITEA_SERVER_URL:-$GITHUB_SERVER_URL}"
+          REPO="${GITEA_REPOSITORY:-$GITHUB_REPOSITORY}"
+          TAG="${GITEA_REF_NAME:-$GITHUB_REF_NAME}"
+          SHA="${GITEA_SHA:-$GITHUB_SHA}"
+          OUT="${GITEA_OUTPUT:-$GITHUB_OUTPUT}"
+          # Pull this tag's section out of changelog.md.
+          ver=${TAG#v}
+          body=$(awk -v v="$ver" \
+            '$0 ~ "^## \\[" v "\\] " { f = 1; next }
+             /^## \[/ && f { exit }
+             f' changelog.md)
+          [ -n "$body" ] || body="See changelog.md in the repository."
+          resp=$(curl -fsSL -X POST -H "Authorization: token $TOKEN" \
+            "$SERVER/api/v1/repos/$REPO/releases" \
+            --data-urlencode "tag_name=$TAG" \
+            --data-urlencode "name=machash $TAG" \
+            --data-urlencode "target_commitish=$SHA" \
+            --data-urlencode "body=$body")
+          rid=$(printf '%s' "$resp" \
+            | sed -n 's/.*"id":[[:space:]]*\([0-9][0-9]*\).*/\1/p')
+          [ -n "$rid" ] || { echo "no release id in: $resp" >&2; exit 1; }
+          printf 'release_id=%s\n' "$rid" >> "$OUT"
+      - name: Upload assets
+        run: |
+          set -eu
+          TOKEN="${GITEA_TOKEN:-$GITHUB_TOKEN}"
+          SERVER="${GITEA_SERVER_URL:-$GITHUB_SERVER_URL}"
+          REPO="${GITEA_REPOSITORY:-$GITHUB_REPOSITORY}"
+          TAG="${GITEA_REF_NAME:-$GITHUB_REF_NAME}"
+          ver=${TAG#v}
+          url="$SERVER/api/v1/repos/$REPO/releases/${{ steps.rel.outputs.release_id }}/assets"
+          curl -fsSL -X POST -H "Authorization: token $TOKEN" "$url" \
+            -F "name=machash" \
+            -F "label=single-file static universal binary" \
+            --data-binary "@dist/machash"
+          curl -fsSL -X POST -H "Authorization: token $TOKEN" "$url" \
+            -F "name=machash-${ver}.tar.gz" \
+            -F "label=source tarball for the package builds" \
+            --data-binary "@dist/machash-${ver}.tar.gz"
