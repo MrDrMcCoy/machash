@@ -8,7 +8,7 @@ packaging/.
 
 Each package builds from the source tarball that the release
 workflow publishes for the tag, for example
-machash-1.0.0.tar.gz. The tarball comes from `make dist`. It has a
+machash-1.0.1.tar.gz. The tarball comes from `make dist`. It has a
 fixed file list and normalized timestamps, so a given tree gives the
 same bytes.
 
@@ -78,11 +78,11 @@ Alpine:
     abuild
 
 Debian. The release tarball must be renamed to
-machash_1.0.0.orig.tar.gz first:
+machash_1.0.1.orig.tar.gz first:
 
-    dpkg-source -x machash_1.0.0.orig.tar.gz
-    cp -r packaging/debian machash-1.0.0/debian
-    cd machash-1.0.0
+    dpkg-source -x machash_1.0.1.orig.tar.gz
+    cp -r packaging/debian machash-1.0.1/debian
+    cd machash-1.0.1
     dpkg-buildpackage -us -uc -b
 
 OpenSuSE and Fedora:

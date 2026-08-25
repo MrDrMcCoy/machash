@@ -5,7 +5,7 @@ revision=1
 hostmakedepends="make curl unzip"
 distfiles="https://github.com/MrDrMcCoy/machash/releases/" \
   "download/v${version}/${pkgname}-${version}.tar.gz"
-checksum=__SDIST_SHA256__
+checksum=32733b8eb3ab5b5edac12a12896475cb1333d7dfc1e57a6e46fb544ed5bcd81b
 short_desc="Hash arbitrary strings into MAC addresses"
 maintainer="MrDrMcCoy <MrDrMcCoy@users.noreply.github.com>"
 license="BSD-3-Clause"

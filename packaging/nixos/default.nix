@@ -26,7 +26,7 @@ stdenvNoCC.mkDerivation rec {
   src = fetchurl {
     url = "https://github.com/MrDrMcCoy/machash/releases/"
       + "download/v${version}/${pname}-${version}.tar.gz";
-    sha256 = "__SDIST_SHA256__";
+    sha256 = "32733b8eb3ab5b5edac12a12896475cb1333d7dfc1e57a6e46fb544ed5bcd81b";
   };
 
   nativeBuildInputs = [ make curl unzip ];

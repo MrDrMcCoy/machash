@@ -11,7 +11,7 @@
 # build chroot, which has no APE binfmt handler.
 
 Name:           machash
-Version:        1.0.0
+Version:        1.0.1
 Release:        1
 Summary:        Hash arbitrary strings into MAC addresses
 
