@@ -3,6 +3,7 @@
 # Targets:
 #   build   - build dist/machash (single-file static universal binary)
 #   test    - build and run unit tests, then the integration suite
+#   fuzz    - build and run the deterministic fuzz harness
 #   lint    - static analysis of C sources, shell scripts, line widths
 #   install - copy the binary into $(PREFIX)/bin
 #   clean   - remove build outputs
@@ -19,9 +20,17 @@ PROG    := machash
 DIST    := dist
 BUILD   := build
 
-SRC     := src/bobcat.c src/log.c src/args.c src/machash.c
-HDR     := src/bobcat.h src/log.h src/args.h
+SRC     := src/bobcat.c src/log.c src/args.c src/mac.c src/machash.c
+HDR     := src/bobcat.h src/log.h src/args.h src/mac.h
 UNIT    := $(BUILD)/test_bobcat $(BUILD)/test_log $(BUILD)/test_args
+FUZZ    := $(BUILD)/fuzz_bobcat $(BUILD)/fuzz_args
+
+# Fuzz targets: UBSan aborts the run on the first report, so a
+# nonzero exit code is a finding. cosmocc has no libFuzzer mode, so
+# the harness is the deterministic driver in tests/fuzz/fuzz.c.
+FUZZ_CFLAGS = $(CFLAGS) -fsanitize=undefined -fno-sanitize-recover=all
+# libFuzzer-style flags, accepted by both fuzz targets.
+FUZZ_ARGS ?= -runs=100000 -seed=1
 
 all: build
 
@@ -76,6 +85,28 @@ $(BUILD)/bobcat_ref: tests/ref/bobcat_ref.c
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) -o $@ tests/ref/bobcat_ref.c
 
+# Fuzz targets: each links the deterministic driver with the code
+# under test. For a longer session pass FUZZ_ARGS="-runs=<big>
+# -seed=<n>" to make.
+$(BUILD)/fuzz_bobcat: tests/fuzz/fuzz_bobcat.c tests/fuzz/fuzz.c \
+                      tests/fuzz/fuzz.h src/bobcat.c src/bobcat.h
+	@mkdir -p $(BUILD)
+	$(CC) $(FUZZ_CFLAGS) -Isrc -Itests/fuzz -o $@ \
+		tests/fuzz/fuzz_bobcat.c tests/fuzz/fuzz.c src/bobcat.c
+
+$(BUILD)/fuzz_args: tests/fuzz/fuzz_args.c tests/fuzz/fuzz.c \
+                    tests/fuzz/fuzz.h src/args.c src/args.h src/log.c \
+                    src/log.h src/mac.c src/mac.h
+	@mkdir -p $(BUILD)
+	$(CC) $(FUZZ_CFLAGS) -Isrc -Itests/fuzz -o $@ \
+		tests/fuzz/fuzz_args.c tests/fuzz/fuzz.c src/args.c \
+		src/log.c src/mac.c
+
+fuzz: $(FUZZ)
+	$(BUILD)/fuzz_bobcat $(FUZZ_ARGS)
+	@$(BUILD)/fuzz_args $(FUZZ_ARGS) \
+		|| { cat $(BUILD)/fuzz_args.stderr; exit 1; }
+
 test: build $(UNIT)
 	$(BUILD)/test_bobcat
 	$(BUILD)/test_log
@@ -90,7 +121,8 @@ lint-c: build
 	cppcheck -Isrc --enable=all --std=c11 -q --inline-suppr \
 		--suppress=missingIncludeSystem \
 		--suppress=checkersReport \
-		--suppress=normalCheckLevelMaxBranches src/ tests/
+		--suppress=normalCheckLevelMaxBranches \
+		--suppress=unmatchedSuppression src/ tests/
 
 lint-sh:
 	shellcheck tests/integration.sh tests/ref/check_oracle.sh
@@ -115,4 +147,4 @@ install: build
 clean:
 	rm -rf $(DIST) $(BUILD)
 
-.PHONY: all build test lint lint-c lint-sh lint-width install clean
+.PHONY: all build test fuzz lint lint-c lint-sh lint-width install clean

@@ -18,6 +18,7 @@
 #include "args.h"
 #include "bobcat.h"
 #include "log.h"
+#include "mac.h"
 
 #define PROG "machash"
 
@@ -49,8 +50,6 @@
 #define STDIN_CHUNK 65536
 // Buffer size for a formatted MAC address, in bytes (18 + NUL).
 #define MAC_STR_SIZE 19
-// Number of octets in a MAC address.
-#define MAC_OCTETS 6
 // Buffer for gethostname(2), in bytes (255 + NUL covers Linux).
 #define HOSTNAME_BUF 256
 
@@ -134,50 +133,9 @@ static int set_iface(const char *v, void *user) {
   return 0;
 }
 
-// Returns the value of a hex digit, or -1.
-static int hexval(char c) {
-  if (c >= '0' && c <= '9') {
-    return c - '0';
-  }
-  if (c >= 'a' && c <= 'f') {
-    return c - 'a' + 10;
-  }
-  if (c >= 'A' && c <= 'F') {
-    return c - 'A' + 10;
-  }
-  return -1;
-}
-
-// Parse a MAC address of the form aa:bb:cc:dd:ee:ff. Returns 0 and
-// stores the 48-bit value in out, or returns -1.
-static int parse_mac(const char *s, unsigned long long *out) {
-  unsigned long long v = 0;
-  const char *p = s;
-  for (int i = 0; i < MAC_OCTETS; i++) {
-    int hi = hexval(p[0]);
-    int lo = hexval(p[1]);
-    if (hi < 0 || lo < 0) {
-      return -1;
-    }
-    v = (v << 8) | (unsigned long long)(hi << 4) | (unsigned long long)lo;
-    p += 2;
-    if (i < MAC_OCTETS - 1) {
-      if (*p != ':') {
-        return -1;
-      }
-      p++;
-    }
-  }
-  if (*p != 0) {
-    return -1;
-  }
-  *out = v;
-  return 0;
-}
-
 static int set_check(const char *v, void *user) {
   struct opt_state *st = user;
-  if (parse_mac(v, &st->check_value) != 0) {
+  if (mac_parse(v, &st->check_value) != 0) {
     log_error(PROG,
               "invalid MAC address '%s' (expected six colon-separated "
               "hex octets, for example 0f:c2:c1:58:42:59); try '%s "
