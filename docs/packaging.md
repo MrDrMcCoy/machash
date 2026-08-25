@@ -1,13 +1,14 @@
 # Packaging
 
 machash ships packages for Homebrew, Alpine, Debian, OpenSuSE,
-Fedora, and Arch. The packaging files live in packaging/.
+Fedora, Arch, NixOS, and Void Linux. The packaging files live in
+packaging/.
 
 ## How a package builds
 
 Each package builds from the source tarball that the release
 workflow publishes for the tag, for example
-machash-1.0.0.tar.gz. The tarball comes from `make dist`. It has a
+machash-1.0.1.tar.gz. The tarball comes from `make dist`. It has a
 fixed file list and normalized timestamps, so a given tree gives the
 same bytes.
 
@@ -51,6 +52,8 @@ will not run until you register it yourself:
 | OpenSuSE | packaging/opensuse/machash.spec |
 | Fedora | packaging/fedora/machash.spec |
 | Arch | packaging/arch/PKGBUILD and machash.install |
+| NixOS | packaging/nixos/default.nix and module.nix |
+| Void Linux | packaging/void/machash.template |
 
 Each file is self-contained. None of them reference files outside
 the source tarball.
@@ -58,7 +61,11 @@ the source tarball.
 ## Building the packages
 
 The build hosts need the tools of each ecosystem plus curl and
-unzip.
+unzip. Each package downloads the release source tarball for its
+version, so build the packages after the tag is published. The
+Makefile has a target for each package (`make package-nixos`,
+`make package-void`, and so on) and `make packages` for all of
+them.
 
 Homebrew:
 
@@ -71,11 +78,11 @@ Alpine:
     abuild
 
 Debian. The release tarball must be renamed to
-machash_1.0.0.orig.tar.gz first:
+machash_1.0.1.orig.tar.gz first:
 
-    dpkg-source -x machash_1.0.0.orig.tar.gz
-    cp -r packaging/debian machash-1.0.0/debian
-    cd machash-1.0.0
+    dpkg-source -x machash_1.0.1.orig.tar.gz
+    cp -r packaging/debian machash-1.0.1/debian
+    cd machash-1.0.1
     dpkg-buildpackage -us -uc -b
 
 OpenSuSE and Fedora:
@@ -86,6 +93,23 @@ OpenSuSE and Fedora:
 Arch:
 
     makepkg -s -C packaging/arch
+
+NixOS. With nixpkgs in the NIX_PATH:
+
+    nix build --impure --expr \
+      '(import <nixpkgs> {}).callPackage \
+       (import packaging/nixos/default.nix) {}'
+
+On a NixOS system, import packaging/nixos/module.nix and set
+machash.enable = true. The module installs the package and
+registers the APE binfmt handler.
+
+Void Linux, from a void-packages checkout:
+
+    mkdir -p srcpkgs/machash
+    cp packaging/void/machash.template srcpkgs/machash/template
+    ./xbps-src setup
+    ./xbps-src pkgbuild machash
 
 ## Testing
 

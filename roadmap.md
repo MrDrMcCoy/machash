@@ -4,6 +4,8 @@ Planned work for machash. Completed items move to changelog.md.
 
 # Done
 
+- 1.0.1 - packages for NixOS and Void Linux, and Makefile targets
+  for the OS package builds (make packages). See changelog.md.
 - 1.0.0 - man page, packages for Homebrew, Alpine, Debian, OpenSuSE,
   Fedora, and Arch, a reproducible source tarball (make dist), and
   the release workflow that publishes the assets. See changelog.md.

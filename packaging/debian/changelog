@@ -1,3 +1,10 @@
+machash (1.0.1-1) unstable; urgency=medium
+
+  * New upstream release. Adds NixOS and Void Linux packaging and
+    Makefile targets for the OS package builds.
+
+ -- MrDrMcCoy <MrDrMcCoy@users.noreply.github.com>  Tue, 25 Aug 2026 00:00:00 -0600
+
 machash (1.0.0-1) unstable; urgency=medium
 
   * Initial Debian packaging. The binary is a single-file static

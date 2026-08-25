@@ -88,9 +88,10 @@ and docs/hash.md for the Bobcat algorithm details.
 
 ## Packaging
 
-Packages for Homebrew, Alpine, Debian, OpenSuSE, Fedora, and Arch
-live in packaging/. Each one builds the universal binary from the
-release source tarball, which `make dist` produces. See
+Packages for Homebrew, Alpine, Debian, OpenSuSE, Fedora, Arch,
+NixOS, and Void Linux live in packaging/. Each one builds the
+universal binary from the release source tarball, which
+`make dist` produces. `make packages` builds all of them; see
 docs/packaging.md for how the build works and how to build each
 package.
 

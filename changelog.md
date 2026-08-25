@@ -7,6 +7,23 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-25
+
+### Added
+
+- Packaging for NixOS (packaging/nixos/) and Void Linux
+  (packaging/void/). Each builds the universal binary from the
+  release source tarball with cosmocc 4.0.2, like the other
+  packages. The NixOS module installs the package and registers
+  the APE binfmt handler (boot.binfmt.registrations), the NixOS
+  equivalent of the postinst scripts of the other packages.
+- Makefile targets for the OS package builds: package-nixos,
+  package-void, package-alpine, package-debian, package-opensuse,
+  package-fedora, package-arch, and package-homebrew. The
+  packages target builds all of them. Run them after the tag is
+  published, since each package downloads the source tarball for
+  its version.
+
 ## [1.0.0] - 2026-08-25
 
 ### Added
