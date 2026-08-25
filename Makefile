@@ -6,6 +6,7 @@
 #   fuzz    - build and run the deterministic fuzz harness
 #   lint    - static analysis of C sources, shell scripts, line widths
 #   man     - render the man page to check it is well-formed groff
+#   dist    - build the versioned source tarball (release asset)
 #   install - copy the binary and man page into $(PREFIX)
 #   clean   - remove build outputs
 
@@ -15,7 +16,7 @@ CFLAGS  = -O2 -std=gnu11 -Wall -Wextra -Werror -Wshadow
 PREFIX  = $(HOME)/.local
 
 # Bake build and version info into the binary (see --version).
-VERSION := 0.5.0
+VERSION := 1.0.0
 
 PROG    := machash
 DIST    := dist
@@ -133,10 +134,16 @@ lint-c: build
 lint-sh:
 	shellcheck tests/integration.sh tests/ref/check_oracle.sh
 
-# Keep sources and docs aligned to 80 columns (see agents.md).
+# Keep sources and docs aligned to 80 columns (see agents.md). The
+# Debian changelog maintainer line is exempt: dpkg-parsechangelog
+# requires it on one line.
 lint-width:
 	@bad=0; \
-	for f in $$(git ls-files '*.c' '*.h' '*.md' '*.sh' '*.1' Makefile); do \
+	for f in $$(git ls-files '*.c' '*.h' '*.md' '*.sh' '*.1' \
+	              'packaging/*' Makefile); do \
+	  if [ "$$f" = packaging/debian/changelog ]; then \
+	    continue; \
+	  fi; \
 	  if awk 'length > 80 { bad = 1; exit } END { exit bad }' "$$f"; then \
 	    :; \
 	  else \
@@ -146,6 +153,23 @@ lint-width:
 	done; \
 	exit $$bad
 
+# Source tarball for the release and the package builds. The file
+# list is fixed and the mtimes are normalized, so the tarball is
+# reproducible for a given tree.
+dist:
+	@rm -rf $(DIST)/$(PROG)-$(VERSION).tar.gz $(BUILD)/sdist
+	@mkdir -p $(BUILD)/sdist/$(PROG)-$(VERSION)
+	@cp -R src tests man docs $(BUILD)/sdist/$(PROG)-$(VERSION)/
+	@cp LICENSE Makefile readme.md changelog.md dependencies.md \
+	  $(BUILD)/sdist/$(PROG)-$(VERSION)/
+	@cd $(BUILD)/sdist && \
+	find $(PROG)-$(VERSION) -exec touch -t 2601010000.00 {} + && \
+	find $(PROG)-$(VERSION) | sort | \
+	tar cf - --no-recursion -T - --owner=0 --group=0 --numeric-owner | \
+	gzip -9n > $(CURDIR)/$(DIST)/$(PROG)-$(VERSION).tar.gz
+	@rm -rf $(BUILD)/sdist
+	@echo "wrote $(DIST)/$(PROG)-$(VERSION).tar.gz"
+
 install: build
 	mkdir -p $(PREFIX)/bin $(PREFIX)/man/man1
 	cp $(DIST)/$(PROG) $(PREFIX)/bin/$(PROG)
@@ -154,5 +178,5 @@ install: build
 clean:
 	rm -rf $(DIST) $(BUILD)
 
-.PHONY: all build test fuzz lint lint-c lint-sh lint-width man install \
-        clean
+.PHONY: all build test fuzz lint lint-c lint-sh lint-width man dist \
+        install clean
