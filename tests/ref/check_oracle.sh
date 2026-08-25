@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Validate the independent Bobcat oracle (build/bobcat_ref) against
 # the four published reference vectors. This certifies the oracle
 # before its output is used as expected values in integration.sh.

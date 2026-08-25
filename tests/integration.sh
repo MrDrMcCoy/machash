@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Integration tests for the machash binary.
 #
 # Expected values were generated with the independent Bobcat oracle
@@ -17,10 +17,15 @@ R_OUT=
 R_ERR=
 R_CODE=0
 
+# Capture stdout, stderr, and the exit code of one machash run.
+# Expected failures (usage errors, no match) are tolerated; set -e
+# is off around the command substitution only.
 run() {
   R_ERR_FILE=$(mktemp) || exit 1
+  set +e
   R_OUT=$("$BIN" "$@" 2>"$R_ERR_FILE")
   R_CODE=$?
+  set -e
   R_ERR=$(cat "$R_ERR_FILE")
   rm -f "$R_ERR_FILE"
 }
@@ -29,8 +34,10 @@ feed() {
   input=$1
   shift
   R_ERR_FILE=$(mktemp) || exit 1
+  set +e
   R_OUT=$(printf '%s' "$input" | "$BIN" "$@" 2>"$R_ERR_FILE")
   R_CODE=$?
+  set -e
   R_ERR=$(cat "$R_ERR_FILE")
   rm -f "$R_ERR_FILE"
 }
@@ -40,9 +47,11 @@ feedf() {
   fmt=$1
   shift
   R_ERR_FILE=$(mktemp) || exit 1
+  set +e
   # shellcheck disable=SC2059
   R_OUT=$(printf "$fmt" | "$BIN" "$@" 2>"$R_ERR_FILE")
   R_CODE=$?
+  set -e
   R_ERR=$(cat "$R_ERR_FILE")
   rm -f "$R_ERR_FILE"
 }
@@ -442,7 +451,7 @@ check_outc "help with inputs" 'String inputs:'
 
 run --version
 check_code "version" 0
-check_outc "version" 'machash 0.3.0'
+check_outc "version" 'machash 0.3.1'
 check_outc "version" 'build:'
 check_outc "version" 'commit:'
 check_outc "version" 'build number:'
