@@ -57,7 +57,8 @@ Common invocations:
     machash -S -s hello             # 59:42:58:c1:c2:0f
     machash --check 0f:c2:c1:58:42:59 hello   # match, exit 0
 
-Run `machash --help` for the full option list with defaults.
+Run `machash --help` for the full option list with defaults. The
+man page, `machash(1)`, covers the same ground.
 
 ## Options
 

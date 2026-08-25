@@ -20,7 +20,7 @@ jobs:
           export PATH=${HOME}/.local/bin:${PATH}
           sudo apt update
           sudo apt install -y \
-             curl cppcheck libarchive-tools shellcheck
+             curl cppcheck libarchive-tools groff shellcheck
           mkdir -p ${HOME}/.local/bin
           curl -fsSL \
             https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip |

@@ -1,0 +1,172 @@
+.TH MACHASH 1 "August 2026" "machash 1.0.0" "User Commands"
+.SH NAME
+machash \- hash strings into MAC addresses
+.SH SYNOPSIS
+.B machash
+.RI "[options] [string...]"
+.SH DESCRIPTION
+machash hashes each input string with the 48-bit Bobcat hash and
+prints the result as a colon-separated MAC address:
+.PP
+.EX
+$ machash \-s hello
+0f:c2:c1:58:42:59
+.EE
+.PP
+The address is fake, but it has the form of a valid MAC address.
+It is useful for deriving a stable, deterministic MAC address from
+any string.
+.SH OPTIONS
+.TP
+.B \-s STR, \-\-string STR
+Hash
+.IR STR .
+You can repeat this option.
+(default: none)
+.TP
+.B \-p, \-\-plain
+Print the raw 48-bit hash as 12 lowercase hex digits.
+There are no separators and no 0x prefix.
+(default: off)
+.TP
+.B \-S, \-\-swap
+Print the six octets in reversed order.
+(default: off)
+.TP
+.B \-\-0x
+Print the raw hash with a 0x prefix.
+(default: off)
+.TP
+.B \-u, \-\-unicast
+Clear the multicast bit so the result is always a unicast address.
+(default: off)
+.TP
+.B \-\-local
+Set the locally-administered bit of the result.
+(default: off)
+.TP
+.B \-l, \-\-lines
+Read stdin as lines. Each line is one input.
+(default: off)
+.TP
+.B \-f FILE, \-\-file FILE
+Read
+.I FILE
+as lines. Each line is one input.
+(default: none)
+.TP
+.B \-n, \-\-hostname
+Use the name of this host as the single input.
+(default: off)
+.TP
+.B \-i IFACE, \-\-interface IFACE
+Use the name of this host and
+.IR IFACE ,
+joined by a colon, as the single input.
+(default: none)
+.TP
+.B \-\-check MAC
+Print match or no match for each input, compared against
+.IR MAC .
+(default: off)
+.TP
+.B \-L LVL, \-\-loglevel LVL
+Set the log level to off, fatal, error, warn, info, debug, or 0-5.
+(default: warn)
+.TP
+.B \-h, \-\-help
+Show the help text and exit.
+.TP
+.B \-\-version
+Show the version and build info, and exit.
+.PP
+The output formats (the default MAC form,
+.BR \-p ,
+.BR \-\-0x ,
+and
+.BR \-S )
+are mutually exclusive.
+.B \-\-check
+is a mode and cannot be combined with a format flag.
+.SH INPUT
+Strings come from
+.B \-\-string
+and from positional arguments, in the order they appear.
+If you give no strings, machash reads all of stdin as one input.
+Multi-line data stays a single input.
+Leading and trailing whitespace is stripped before hashing.
+Options are recognized only before the first positional argument.
+After that, all arguments are strings.
+A bare
+.B \-\-
+ends option parsing.
+.PP
+Line mode reads one input per line.
+.B \-\-lines
+reads the lines of stdin.
+.B \-\-file
+reads the lines of a file.
+Line mode cannot be combined with
+.B \-\-string
+or positional arguments.
+.PP
+Hostname mode takes the input from the machine.
+.B \-\-hostname
+uses the host name.
+.B \-\-interface
+uses the host name and the interface name, joined by a colon.
+Hostname mode gives one input.
+It cannot be combined with other input sources, and stdin is
+ignored.
+.SH OUTPUT
+By default, machash prints the digest as six colon-separated
+lowercase hex octets, most significant octet first.
+If the result is a multicast address and you did not request plain
+or unicast output, machash prints a warning on stderr.
+.PP
+In check mode, machash prints one line per input:
+.BR match
+or
+.BR "no match" .
+The exit status is 0 if all inputs match, and 1 if any input does
+not match.
+.SH EXIT STATUS
+The exit status is 0 on success.
+It is 1 if an error occurs, or if any input does not match in
+check mode.
+.SH EXAMPLES
+Hash a string from a flag and from stdin:
+.PP
+.EX
+$ machash \-s hello
+0f:c2:c1:58:42:59
+$ echo hello | machash
+0f:c2:c1:58:42:59
+.EE
+.PP
+Print the raw hash, with the multicast bit cleared:
+.PP
+.EX
+$ machash \-pu \-s hello
+0fc2c1584259
+.EE
+.PP
+Hash each line of a file:
+.PP
+.EX
+$ machash \-f names.txt
+.EE
+.PP
+Derive one stable MAC address for this host:
+.PP
+.EX
+$ machash \-n
+7f:b8:8e:31:f2:d8
+.EE
+.SH SEE ALSO
+The project page, with the documentation for the Bobcat hash, the
+output formats, check mode, and hostname mode:
+.PP
+.RI https://github.com/MrDrMcCoy/machash
+.SH VERSION
+This man page documents machash 1.0.0.

@@ -5,7 +5,8 @@
 #   test    - build and run unit tests, then the integration suite
 #   fuzz    - build and run the deterministic fuzz harness
 #   lint    - static analysis of C sources, shell scripts, line widths
-#   install - copy the binary into $(PREFIX)/bin
+#   man     - render the man page to check it is well-formed groff
+#   install - copy the binary and man page into $(PREFIX)
 #   clean   - remove build outputs
 
 # Default to cosmocc (overridable on the command line).
@@ -107,12 +108,17 @@ fuzz: $(FUZZ)
 	@$(BUILD)/fuzz_args $(FUZZ_ARGS) \
 		|| { cat $(BUILD)/fuzz_args.stderr; exit 1; }
 
-test: build $(UNIT)
+# The man target render-checks the man page (groff must be present).
+test: build $(UNIT) man
 	$(BUILD)/test_bobcat
 	$(BUILD)/test_log
 	$(BUILD)/test_args
 	./tests/ref/check_oracle.sh
 	./tests/integration.sh
+
+# Render the man page to make sure it is well-formed groff.
+man:
+	groff -Tascii -man man/machash.1 > /dev/null
 
 lint: lint-c lint-sh lint-width
 
@@ -130,7 +136,7 @@ lint-sh:
 # Keep sources and docs aligned to 80 columns (see agents.md).
 lint-width:
 	@bad=0; \
-	for f in $$(git ls-files '*.c' '*.h' '*.md' '*.sh' Makefile); do \
+	for f in $$(git ls-files '*.c' '*.h' '*.md' '*.sh' '*.1' Makefile); do \
 	  if awk 'length > 80 { bad = 1; exit } END { exit bad }' "$$f"; then \
 	    :; \
 	  else \
@@ -141,10 +147,12 @@ lint-width:
 	exit $$bad
 
 install: build
-	mkdir -p $(PREFIX)/bin
+	mkdir -p $(PREFIX)/bin $(PREFIX)/man/man1
 	cp $(DIST)/$(PROG) $(PREFIX)/bin/$(PROG)
+	cp man/machash.1 $(PREFIX)/man/man1/machash.1
 
 clean:
 	rm -rf $(DIST) $(BUILD)
 
-.PHONY: all build test fuzz lint lint-c lint-sh lint-width install clean
+.PHONY: all build test fuzz lint lint-c lint-sh lint-width man install \
+        clean
