@@ -37,3 +37,6 @@ jobs:
           make lint
           make build
           make test
+          # A short deterministic fuzz session; run the fuzz targets
+          # with more runs locally for a deeper pass.
+          make fuzz FUZZ_ARGS="-runs=20000 -seed=1"
