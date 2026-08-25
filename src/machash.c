@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "args.h"
 #include "bobcat.h"
@@ -50,6 +51,8 @@
 #define MAC_STR_SIZE 19
 // Number of octets in a MAC address.
 #define MAC_OCTETS 6
+// Buffer for gethostname(2), in bytes (255 + NUL covers Linux).
+#define HOSTNAME_BUF 256
 
 // Output formats for the digest.
 typedef enum {
@@ -76,6 +79,7 @@ struct inputs {
 // Options that need a callback to store their value.
 struct opt_state {
   const char *file;
+  char *iface;  // stripped copy of the -i/--interface name, or NULL
   int check_enabled;
   unsigned long long check_value;
 };
@@ -98,6 +102,35 @@ static int add_input(const char *s, void *user) {
 static int set_file(const char *v, void *user) {
   struct opt_state *st = user;
   st->file = v;
+  return 0;
+}
+
+// Store a copy of the interface name with its surrounding whitespace
+// removed; an empty name is a usage error.
+static int set_iface(const char *v, void *user) {
+  struct opt_state *st = user;
+  const char *p = v;
+  const char *e = v + strlen(v);
+  while (p < e && isspace((unsigned char)*p)) {
+    p++;
+  }
+  while (e > p && isspace((unsigned char)e[-1])) {
+    e--;
+  }
+  if (p == e) {
+    log_error(PROG,
+              "the interface name is empty; give a name such as eth0; "
+              "try '%s --help' for usage",
+              PROG);
+    return -1;
+  }
+  char *copy = malloc((size_t)(e - p) + 1);
+  if (!copy) {
+    log_abort(PROG, "out of memory copying the interface name");
+  }
+  memcpy(copy, p, (size_t)(e - p));
+  copy[e - p] = 0;
+  st->iface = copy;
   return 0;
 }
 
@@ -343,10 +376,15 @@ static void print_help(int detailed) {
       "                     result. (default: off)\n"
       "  -l, --lines        Read stdin as lines. Each line is one\n"
       "                     input. (default: off)\n"
-      "  -f, --file FILE    Read FILE as lines. Each line is one\n"
-      "                     input. (default: none)\n"
-      "  --check MAC       Print match or no match for each input,\n"
-      "                     compared against MAC. (default: off)\n"
+       "  -f, --file FILE    Read FILE as lines. Each line is one\n"
+       "                     input. (default: none)\n"
+       "  -n, --hostname     Use the name of this host as the single\n"
+       "                     input. (default: off)\n"
+       "  -i, --interface I  Use the name of this host and I, joined\n"
+       "                     by a colon, as the single input.\n"
+       "                     (default: none)\n"
+       "  --check MAC       Print match or no match for each input,\n"
+       "                     compared against MAC. (default: off)\n"
       "  -L, --loglevel LVL Log level: off, fatal, error, warn, info,\n"
       "                     debug, or 0-5. (default: warn)\n"
       "  -h, --help         Show this help and exit.\n"
@@ -390,11 +428,21 @@ static void print_help(int detailed) {
         "  -f/--file reads each line of FILE as one input.\n"
         "  A line loses its newline, and leading and trailing\n"
         "  whitespace is stripped as for other inputs. A line that is\n"
-        "  empty after stripping hashes the empty string, with a\n"
-        "  warning. Line mode cannot be combined with -s or\n"
-        "  positional arguments, and -l and -f cannot be combined.\n"
-        "\n"
-        "Check mode:\n"
+         "  empty after stripping hashes the empty string, with a\n"
+         "  warning. Line mode cannot be combined with -s or\n"
+         "  positional arguments, and -l and -f cannot be combined.\n"
+         "\n"
+         "Hostname input:\n"
+         "  -n/--hostname uses the name of this host (gethostname)\n"
+         "  as the single input.\n"
+         "  -i/--interface IFACE uses the host name and IFACE, joined\n"
+         "  by a colon, as the single input, for example\n"
+         "  lappy486:eth0. Giving -n with -i changes nothing.\n"
+         "  Hostname mode gives exactly one input. It cannot be\n"
+         "  combined with -s, positional arguments, or line mode.\n"
+         "  Data piped on stdin is ignored in hostname mode.\n"
+         "\n"
+         "Check mode:\n"
         "  --check MAC compares each input to MAC after applying\n"
         "  -u/--local, as in normal output mode. It prints match or\n"
         "  no match, one line per input, in input order. The exit\n"
@@ -407,7 +455,7 @@ int main(int argc, char **argv) {
   static struct inputs inputs;
   static struct opt_state state;
   int plain = 0, unicast = 0, local = 0, help = 0, version = 0;
-  int lines = 0, hex0x = 0, swap = 0;
+  int lines = 0, hex0x = 0, swap = 0, hostname = 0;
   const opt_spec_t specs[] = {
       {.long_name = "string", .short_name = 's', .takes_value = 1,
        .cb = add_input, .user = &inputs},
@@ -419,6 +467,10 @@ int main(int argc, char **argv) {
       {.long_name = "lines", .short_name = 'l', .bool_dest = &lines},
       {.long_name = "file", .short_name = 'f', .takes_value = 1,
        .cb = set_file, .user = &state},
+      {.long_name = "hostname", .short_name = 'n',
+       .bool_dest = &hostname},
+      {.long_name = "interface", .short_name = 'i', .takes_value = 1,
+       .cb = set_iface, .user = &state},
       {.long_name = "check", .takes_value = 1, .cb = set_check,
        .user = &state},
       {.long_name = "loglevel", .short_name = 'L', .takes_value = 1,
@@ -426,7 +478,7 @@ int main(int argc, char **argv) {
       {.long_name = "help", .short_name = 'h', .bool_dest = &help},
       {.long_name = "version", .bool_dest = &version},
   };
-  if (parse_opts(PROG, argc, argv, specs, 12, add_input, &inputs) != 0) {
+  if (parse_opts(PROG, argc, argv, specs, 14, add_input, &inputs) != 0) {
     return 1;
   }
   // cppcheck-suppress knownConditionTrueFalse; set via parse_opts
@@ -460,6 +512,50 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  // Hostname mode: -n hashes the host name, -i hashes the host name
+  // plus the interface name, joined by a colon.
+  int host_mode = hostname || state.iface != NULL;
+  if (host_mode && line_mode) {
+    log_error(PROG,
+              "hostname mode cannot be combined with -l/--lines or "
+              "-f/--file; try '%s --help' for usage",
+              PROG);
+    return 1;
+  }
+  if (host_mode && inputs.count > 0) {
+    log_error(PROG,
+              "hostname mode cannot be combined with -s or positional "
+              "arguments; try '%s --help' for usage",
+              PROG);
+    return 1;
+  }
+
+  // One raw input: the hostname-mode string, or all of stdin.
+  char *raw_buf = NULL;
+  size_t raw_len = 0;
+  if (host_mode) {
+    char host[HOSTNAME_BUF];
+    if (gethostname(host, sizeof host) != 0) {
+      log_error(PROG, "cannot get the hostname: %s", strerror(errno));
+      return 1;
+    }
+    if (state.iface != NULL) {
+      raw_buf =
+          malloc(strlen(host) + 1 + strlen(state.iface) + 1);
+      if (!raw_buf) {
+        log_abort(PROG, "out of memory building the hostname input");
+      }
+      sprintf(raw_buf, "%s:%s", host, state.iface);
+    } else {
+      raw_buf = strdup(host);
+      if (!raw_buf) {
+        log_abort(PROG, "out of memory copying the hostname");
+      }
+    }
+    raw_len = strlen(raw_buf);
+    log_msg(PROG, LOG_DEBUG, "hostname input: %s", raw_buf);
+  }
+
   char *stdin_buf = NULL;
   size_t stdin_len = 0;
   if (line_mode) {
@@ -485,7 +581,7 @@ int main(int argc, char **argv) {
                 PROG);
       return 1;
     }
-  } else if (inputs.count == 0) {
+  } else if (inputs.count == 0 && !host_mode) {
     stdin_buf = read_stdin_all(&stdin_len);
     if (stdin_len == 0) {
       free(stdin_buf);
@@ -528,6 +624,10 @@ int main(int argc, char **argv) {
   if (local) {
     bits |= BITS_LOCAL;
   }
+  if (!host_mode && stdin_buf) {
+    raw_buf = stdin_buf;
+    raw_len = stdin_len;
+  }
   int all_match = 1;
   if (state.check_enabled) {
     if (inputs.count > 0) {
@@ -539,7 +639,7 @@ int main(int argc, char **argv) {
       }
     } else {
       all_match =
-          check_input(stdin_buf, stdin_len, state.check_value, bits) &&
+          check_input(raw_buf, raw_len, state.check_value, bits) &&
           all_match;
     }
   } else if (inputs.count > 0) {
@@ -547,7 +647,7 @@ int main(int argc, char **argv) {
       hash_input(inputs.items[i], strlen(inputs.items[i]), fmt, bits);
     }
   } else {
-    hash_input(stdin_buf, stdin_len, fmt, bits);
+    hash_input(raw_buf, raw_len, fmt, bits);
   }
   if (line_mode) {
     // Line mode owns its input strings; free each one.
@@ -555,7 +655,8 @@ int main(int argc, char **argv) {
       free((void *)inputs.items[i]);
     }
   }
-  free(stdin_buf);
+  free(raw_buf);
+  free(state.iface);
   free(inputs.items);
   return state.check_enabled && !all_match ? 1 : 0;
 }
