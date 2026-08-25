@@ -1,3 +1,11 @@
+machash (1.0.2-1) unstable; urgency=medium
+
+  * New upstream release. Adds tools/install-cosmocc.sh, a POSIX
+    sh installer for the cosmocc toolchain, and the make toolchain
+    target.
+
+ -- MrDrMcCoy <MrDrMcCoy@users.noreply.github.com>  Tue, 25 Aug 2026 00:00:00 -0600
+
 machash (1.0.1-1) unstable; urgency=medium
 
   * New upstream release. Adds NixOS and Void Linux packaging and

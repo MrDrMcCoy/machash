@@ -7,6 +7,7 @@
 #   lint    - static analysis of C sources, shell scripts, line widths
 #   man     - render the man page to check it is well-formed groff
 #   dist      - build the versioned source tarball (release asset)
+#   toolchain - install the cosmocc toolchain under ~/.local
 #   packages  - build all the OS packages (see the package-* targets)
 #   package-* - build one OS package from the release source tarball
 #   install   - copy the binary and man page into $(PREFIX)
@@ -18,7 +19,7 @@ CFLAGS  = -O2 -std=gnu11 -Wall -Wextra -Werror -Wshadow
 PREFIX  = $(HOME)/.local
 
 # Bake build and version info into the binary (see --version).
-VERSION := 1.0.1
+VERSION := 1.0.2
 
 PROG    := machash
 DIST    := dist
@@ -41,7 +42,7 @@ all: build
 # Generated header carrying the baked-in version, build info, commit
 # hash, and build number. PHONY so every build gets a new number.
 .PHONY: $(BUILD)/version.h
-$(BUILD)/version.h:
+$(BUILD)/version.h: toolchain-check
 	@mkdir -p $(BUILD)
 	@{ \
 	if [ -f $(BUILD)/.build-number ]; then \
@@ -92,15 +93,16 @@ $(BUILD)/bobcat_ref: tests/ref/bobcat_ref.c
 # Fuzz targets: each links the deterministic driver with the code
 # under test. For a longer session pass FUZZ_ARGS="-runs=<big>
 # -seed=<n>" to make.
-$(BUILD)/fuzz_bobcat: tests/fuzz/fuzz_bobcat.c tests/fuzz/fuzz.c \
-                      tests/fuzz/fuzz.h src/bobcat.c src/bobcat.h
+$(BUILD)/fuzz_bobcat: toolchain-check tests/fuzz/fuzz_bobcat.c \
+                      tests/fuzz/fuzz.c tests/fuzz/fuzz.h \
+                      src/bobcat.c src/bobcat.h
 	@mkdir -p $(BUILD)
 	$(CC) $(FUZZ_CFLAGS) -Isrc -Itests/fuzz -o $@ \
 		tests/fuzz/fuzz_bobcat.c tests/fuzz/fuzz.c src/bobcat.c
 
-$(BUILD)/fuzz_args: tests/fuzz/fuzz_args.c tests/fuzz/fuzz.c \
-                    tests/fuzz/fuzz.h src/args.c src/args.h src/log.c \
-                    src/log.h src/mac.c src/mac.h
+$(BUILD)/fuzz_args: toolchain-check tests/fuzz/fuzz_args.c \
+                    tests/fuzz/fuzz.c tests/fuzz/fuzz.h src/args.c \
+                    src/args.h src/log.c src/log.h src/mac.c src/mac.h
 	@mkdir -p $(BUILD)
 	$(CC) $(FUZZ_CFLAGS) -Isrc -Itests/fuzz -o $@ \
 		tests/fuzz/fuzz_args.c tests/fuzz/fuzz.c src/args.c \
@@ -134,7 +136,8 @@ lint-c: build
 		--suppress=unmatchedSuppression src/ tests/
 
 lint-sh:
-	shellcheck tests/integration.sh tests/ref/check_oracle.sh
+	shellcheck tests/integration.sh tests/ref/check_oracle.sh \
+	    tools/install-cosmocc.sh
 
 # Keep sources and docs aligned to 80 columns (see agents.md). The
 # Debian changelog maintainer line is exempt: dpkg-parsechangelog
@@ -161,7 +164,7 @@ lint-width:
 dist:
 	@rm -rf $(DIST)/$(PROG)-$(VERSION).tar.gz $(BUILD)/sdist
 	@mkdir -p $(BUILD)/sdist/$(PROG)-$(VERSION)
-	@cp -R src tests man docs $(BUILD)/sdist/$(PROG)-$(VERSION)/
+	@cp -R src tests man docs tools $(BUILD)/sdist/$(PROG)-$(VERSION)/
 	@cp LICENSE Makefile readme.md changelog.md dependencies.md \
 	  $(BUILD)/sdist/$(PROG)-$(VERSION)/
 	@cd $(BUILD)/sdist && \
@@ -171,6 +174,21 @@ dist:
 	gzip -9n > $(CURDIR)/$(DIST)/$(PROG)-$(VERSION).tar.gz
 	@rm -rf $(BUILD)/sdist
 	@echo "wrote $(DIST)/$(PROG)-$(VERSION).tar.gz"
+
+# Install the cosmocc toolchain under ~/.local, where the build
+# looks for it (see the script for the download and the APE
+# handler handling on Linux).
+toolchain:
+	sh tools/install-cosmocc.sh
+
+# The compile step needs $(CC) on the PATH.
+.PHONY: toolchain-check
+toolchain-check:
+	@command -v $(CC) >/dev/null 2>&1 || { \
+	  echo "error: $(CC) is not on the PATH" >&2; \
+	  echo "run: make toolchain, or set CC to a compiler" >&2; \
+	  exit 1; \
+	}
 
 # OS package builds. Each target builds one package from the
 # release source tarball for $(VERSION), which the tag workflow
@@ -232,6 +250,6 @@ clean:
 	rm -rf $(DIST) $(BUILD)
 
 .PHONY: all build test fuzz lint lint-c lint-sh lint-width man dist \
-        packages package-nixos package-void package-alpine \
-        package-debian package-opensuse package-fedora package-arch \
-        package-homebrew install clean
+        toolchain toolchain-check packages package-nixos package-void \
+        package-alpine package-debian package-opensuse package-fedora \
+        package-arch package-homebrew install clean

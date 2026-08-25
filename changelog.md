@@ -7,6 +7,22 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-25
+
+### Added
+
+- tools/install-cosmocc.sh installs the pinned cosmocc 4.0.2
+  toolchain under ~/.local (or a prefix argument), where the
+  compile step looks for it. The script is POSIX sh with minimal
+  dependencies: a downloader (curl or wget), a zip extractor
+  (unzip, bsdtar, or python3), and a sha256 tool (sha256sum,
+  shasum, openssl, or python3). It verifies the download by
+  sha256, and on Linux it registers the APE binfmt handler if it
+  can. `make toolchain` runs the script, and the compile targets
+  hint at it when CC is not on the PATH.
+- The source tarball (make dist) now carries tools/, so the
+  release tarball installs its own toolchain on a bare machine.
+
 ## [1.0.1] - 2026-08-25
 
 ### Added

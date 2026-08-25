@@ -4,6 +4,9 @@ Planned work for machash. Completed items move to changelog.md.
 
 # Done
 
+- 1.0.2 - tools/install-cosmocc.sh, a minimal-dependency POSIX sh
+  installer for the cosmocc toolchain, and the make toolchain
+  target. See changelog.md.
 - 1.0.1 - packages for NixOS and Void Linux, and Makefile targets
   for the OS package builds (make packages). See changelog.md.
 - 1.0.0 - man page, packages for Homebrew, Alpine, Debian, OpenSuSE,

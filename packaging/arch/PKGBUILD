@@ -11,7 +11,7 @@
 # build environment, which has no APE binfmt handler.
 
 pkgname=machash
-pkgver=1.0.1
+pkgver=1.0.2
 pkgrel=1
 pkgdesc="Hash arbitrary strings into MAC addresses"
 arch=(x86_64 aarch64)
@@ -22,7 +22,7 @@ makedepends=(curl unzip)
 install=machash.install
 source=("https://github.com/MrDrMcCoy/machash/releases/"
         "download/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
-sha256sums=('32733b8eb3ab5b5edac12a12896475cb1333d7dfc1e57a6e46fb544ed5bcd81b')
+sha256sums=('971429a3de578cb937920925bb4c7e8978abc9ae4d14c7b1340bc4712e3733b2')
 
 build() {
 	cd "${srcdir}/${pkgname}-${pkgver}"
