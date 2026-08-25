@@ -7,6 +7,29 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-25
+
+### Added
+
+- Hostname input mode: `-n/--hostname` uses the name of this host
+  (gethostname) as the single input. `-i/--interface IFACE` uses the
+  host name and IFACE, joined by a colon, as the single input, so
+  one command gives one stable MAC per host and per interface.
+  Hostname mode is exclusive: it cannot be combined with -s,
+  positional arguments, or line mode, and stdin is ignored.
+- docs/hostname.md documents the new mode.
+
+### Fixed
+
+- The test suite aborts at the first expected failure. The 0.3.1
+  switch to set -Eeuo pipefail made the capture helpers fatal on
+  nonzero exit codes, and set -E is not valid under a #!/bin/sh
+  shebang. Both scripts now use bash, and the capture helpers
+  record exit codes instead of aborting. The CI test job failed on
+  this for the same reason.
+- The --version expectation in the integration suite still said
+  0.3.0 after the 0.3.1 release.
+
 ## [0.3.1] - 2026-08-24
 
 ### Changed
