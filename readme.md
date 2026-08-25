@@ -14,7 +14,9 @@ string. With `-p/--plain` the tool prints a general 48-bit hash.
 
 The build needs [cosmocc][cosmocc], the compiler for
 [Cosmopolitan][cosmo], a C toolchain that emits single-file static
-binaries running on many platforms:
+binaries running on many platforms. If it is not installed,
+`make toolchain` runs tools/install-cosmocc.sh, which fetches the
+pinned release zip, verifies it, and installs it under ~/.local.
 
     make build
 

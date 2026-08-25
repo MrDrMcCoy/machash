@@ -8,7 +8,8 @@ None. v1.0.1 is released (2026-08-25). See changelog.md.
 
 ## Notes for the next agent
 
-- Toolchain: cosmocc 4.0.2 in ~/.local/bin. Run `make build`,
+- Toolchain: cosmocc 4.0.2 in ~/.local/bin. `make toolchain`
+  installs it (tools/install-cosmocc.sh). Run `make build`,
   `make test`, `make lint`, `make fuzz`.
 - Lint tools: shellcheck and cppcheck in ~/.local/bin (cppcheck is a
   pip wheel installed in ~/venv, symlinked into ~/.local/bin).
