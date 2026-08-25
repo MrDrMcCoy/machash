@@ -238,6 +238,62 @@ feed '' -l
 check_code "line mode empty stdin" 1
 check_err "line mode empty stdin" 'no input provided'
 
+# --- hostname mode ---
+# Expected values come from hashing the host name itself, so the
+# suite does not depend on what the host is called.
+HOSTN=$(hostname)
+HOST_MAC=$("$BIN" -s "$HOSTN")
+IFACE_MAC=$("$BIN" -s "$HOSTN:eth0")
+
+run -n
+check_out "hostname mode" "$HOST_MAC"
+check_code "hostname mode" 0
+
+run --hostname
+check_out "hostname long flag" "$HOST_MAC"
+
+run -n -i eth0
+check_out "hostname plus interface" "$IFACE_MAC"
+check_code "hostname plus interface" 0
+
+run -i eth0
+check_out "interface implies hostname" "$IFACE_MAC"
+
+run -nu
+check_code "clustered hostname and unicast" 0
+
+feed 'junk' -n
+check_out "hostname mode ignores stdin" "$HOST_MAC"
+check_code "hostname mode ignores stdin" 0
+
+run -n --check "$HOST_MAC"
+check_out "check mode with hostname" 'match'
+check_code "check mode with hostname" 0
+
+run -n --check 00:00:00:00:00:00
+check_out "check mode hostname no match" 'no match'
+check_code "check mode hostname no match" 1
+
+run -n -s x
+check_code "hostname mode with -s rejected" 1
+check_err "hostname mode with -s rejected" 'hostname mode cannot be combined'
+
+run -n -f /dev/null
+check_code "hostname mode with file rejected" 1
+check_err "hostname mode with file rejected" 'hostname mode cannot be combined'
+
+run -n -l </dev/null
+check_code "hostname mode with lines rejected" 1
+check_err "hostname mode with lines rejected" 'hostname mode cannot be combined'
+
+run -i ''
+check_code "empty interface name rejected" 1
+check_err "empty interface name rejected" 'interface name is empty'
+
+run -i '   '
+check_code "blank interface name rejected" 1
+check_err "blank interface name rejected" 'interface name is empty'
+
 # --- output modes ---
 run -p -s hello
 check_out "plain" '0fc2c1584259'
