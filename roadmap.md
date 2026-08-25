@@ -2,13 +2,11 @@
 
 Planned work for machash. Completed items move to changelog.md.
 
-## 1.0.0
-
-- [ ] Man page
-- [ ] Packages for Homebrew, Alpine, Debian, OpenSuSE, Fedora, and Arch
-
 # Done
 
+- 1.0.0 - man page, packages for Homebrew, Alpine, Debian, OpenSuSE,
+  Fedora, and Arch, a reproducible source tarball (make dist), and
+  the release workflow that publishes the assets. See changelog.md.
 - 0.5.0 - deterministic fuzz harness for the argument parser and
   hash, UBSan in abort mode. Found and fixed an undefined left
   shift in the Bobcat key schedule. See changelog.md.

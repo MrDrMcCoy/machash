@@ -7,6 +7,31 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-25
+
+### Added
+
+- Man page man/machash.1 (machash(1)). `make man` renders it to
+  check that it is well-formed groff, and the test job runs this
+  check (CI installs groff). `make install` copies the page to
+  $(PREFIX)/man/man1.
+- Packaging files for Homebrew, Alpine, Debian, OpenSuSE, Fedora,
+  and Arch in packaging/. Each file is self-contained. A package
+  builds the universal binary from the release source tarball with
+  cosmocc 4.0.2, which it downloads at build time.
+- `make dist` builds a reproducible versioned source tarball,
+  dist/machash-1.0.0.tar.gz. It has a fixed file list and
+  normalized timestamps, so a given tree gives the same bytes.
+- The release workflow (.github/workflows/release.yml) publishes
+  the binary and the source tarball as release assets on each v*
+  tag. It is Gitea-compatible, like the CI workflow.
+- The Linux packages ship the APE loader for the host architecture
+  at /usr/lib/machash/ape and register the APE binfmt handler at
+  install time, so the binary runs without further setup. On
+  removal, the handler is unregistered only if the package
+  registered it. docs/packaging.md explains the build and the APE
+  handling.
+
 ## [0.5.0] - 2026-08-25
 
 ### Added

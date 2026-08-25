@@ -29,6 +29,7 @@
   - Leverage early return and continue.
   - Use enums instead of booleans for function parameters.
   - Do not add comments in code.
+  - Use concurrency or SIMD where appropriate.
 - Be careful with library imports.
   - Prefer writing new code to library imports if the function to
     implement is small.
