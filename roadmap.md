@@ -2,17 +2,23 @@
 
 Planned work for machash. Completed items move to changelog.md.
 
-## Later
+## 0.4.0
 
 - [ ] Add `-n`, `--hostname` arguments to generate a MAC address
   from the hostname
 - [ ] Add `-i`, `--interface` arguments to generate a MAC address
   from hostname + interface name
-- [ ] Fuzz harness for the argument parser and hash
-- [ ] Man page
-- [ ] Packages for Homebrew, Debian, OpenSuSE, Fedora, and Arch
 
-## Done
+## 0.5.0
+
+- [ ] Fuzz harness for the argument parser and hash
+
+## 1.0.0
+
+- [ ] Man page
+- [ ] Packages for Homebrew, Alpine, Debian, OpenSuSE, Fedora, and Arch
+
+# Done
 
 - 0.3.1 - fixed and simplified CI workflow. Still broken.
 - 0.3.0 - line-oriented input mode (-l, -f), --0x and -S output
