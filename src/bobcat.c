@@ -61,13 +61,16 @@ static void key_schedule(int x[WORDS_PER_BLOCK]) {
   x[0] = (x[0] - (x[7] ^ KS_X0_CONST)) & WORD_MASK;
   x[1] = (x[1] ^ x[0]) & WORD_MASK;
   x[2] = (x[2] + x[1]) & WORD_MASK;
-  x[3] = (x[3] - (x[2] ^ ((~x[1]) << 5))) & WORD_MASK;
+  // Mask before shifting: ~x[1] is a negative int and left-shifting
+  // it is undefined. The outer WORD_MASK keeps only the low 16 bits,
+  // which the masked shift produces identically.
+  x[3] = (x[3] - (x[2] ^ (((~x[1]) & WORD_MASK) << 5))) & WORD_MASK;
   x[4] = (x[4] ^ x[3]) & WORD_MASK;
   x[5] = (x[5] + x[4]) & WORD_MASK;
   x[6] = (x[6] - (x[5] ^ ((~x[4]) >> 6))) & WORD_MASK;
   x[7] = (x[7] ^ x[6]) & WORD_MASK;
   x[0] = (x[0] + x[7]) & WORD_MASK;
-  x[1] = (x[1] - (x[0] ^ ((~x[7]) << 5))) & WORD_MASK;
+  x[1] = (x[1] - (x[0] ^ (((~x[7]) & WORD_MASK) << 5))) & WORD_MASK;
   x[2] = (x[2] ^ x[1]) & WORD_MASK;
   x[3] = (x[3] + x[2]) & WORD_MASK;
   x[4] = (x[4] - (x[3] ^ ((~x[2]) >> 6))) & WORD_MASK;
