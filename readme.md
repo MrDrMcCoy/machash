@@ -34,6 +34,10 @@ Line mode reads one input per line. `-l/--lines` reads the lines of
 stdin. `-f/--file FILE` reads the lines of a file. Each line loses
 its newline and is stripped like other inputs.
 
+Hostname mode takes the input from the machine. `-n/--hostname`
+uses the host's own name. `-i/--interface IFACE` uses the host name
+and IFACE, joined by a colon. See docs/hostname.md for the details.
+
 `--check MAC` compares the inputs to an existing MAC address and
 prints match or no match per input. See docs/check.md for the
 details.
@@ -47,6 +51,8 @@ Common invocations:
     machash --local -s "hello"      # locally-administered
     echo hello | machash -l         # stdin lines
     machash -f names.txt            # each line of a file
+    machash -n                      # MAC from the host name
+    machash -n -i eth0              # MAC from host + interface
     machash --0x -s hello           # 0x0fc2c1584259
     machash -S -s hello             # 59:42:58:c1:c2:0f
     machash --check 0f:c2:c1:58:42:59 hello   # match, exit 0
@@ -65,6 +71,8 @@ Run `machash --help` for the full option list with defaults.
 | `--local` | off | set the locally-administered bit |
 | `-l`, `--lines` | off | each line of stdin is one input |
 | `-f`, `--file FILE` | none | each line of FILE is one input |
+| `-n`, `--hostname` | off | the host's own name is the input |
+| `-i`, `--interface IFACE` | none | host name and IFACE, colon-joined |
 | `--check MAC` | off | print match or no match per input |
 | `-L`, `--loglevel LVL` | warn | off/fatal/error/warn/info/debug, or 0-5 |
 | `-h`, `--help` | - | show help text |
@@ -74,8 +82,8 @@ Output formats are mutually exclusive. `--check` is a mode and
 cannot be combined with a format flag.
 
 See docs/outputs.md for the bit semantics and the multicast warning,
-docs/check.md for check mode, and docs/hash.md for the Bobcat
-algorithm details.
+docs/hostname.md for hostname mode, docs/check.md for check mode,
+and docs/hash.md for the Bobcat algorithm details.
 
 ## Testing and development
 
