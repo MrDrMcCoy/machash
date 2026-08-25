@@ -1,7 +1,8 @@
 # Packaging
 
 machash ships packages for Homebrew, Alpine, Debian, OpenSuSE,
-Fedora, and Arch. The packaging files live in packaging/.
+Fedora, Arch, NixOS, and Void Linux. The packaging files live in
+packaging/.
 
 ## How a package builds
 
@@ -51,6 +52,8 @@ will not run until you register it yourself:
 | OpenSuSE | packaging/opensuse/machash.spec |
 | Fedora | packaging/fedora/machash.spec |
 | Arch | packaging/arch/PKGBUILD and machash.install |
+| NixOS | packaging/nixos/default.nix and module.nix |
+| Void Linux | packaging/void/machash.template |
 
 Each file is self-contained. None of them reference files outside
 the source tarball.
@@ -58,7 +61,11 @@ the source tarball.
 ## Building the packages
 
 The build hosts need the tools of each ecosystem plus curl and
-unzip.
+unzip. Each package downloads the release source tarball for its
+version, so build the packages after the tag is published. The
+Makefile has a target for each package (`make package-nixos`,
+`make package-void`, and so on) and `make packages` for all of
+them.
 
 Homebrew:
 
@@ -86,6 +93,23 @@ OpenSuSE and Fedora:
 Arch:
 
     makepkg -s -C packaging/arch
+
+NixOS. With nixpkgs in the NIX_PATH:
+
+    nix build --impure --expr \
+      '(import <nixpkgs> {}).callPackage \
+       (import packaging/nixos/default.nix) {}'
+
+On a NixOS system, import packaging/nixos/module.nix and set
+machash.enable = true. The module installs the package and
+registers the APE binfmt handler.
+
+Void Linux, from a void-packages checkout:
+
+    mkdir -p srcpkgs/machash
+    cp packaging/void/machash.template srcpkgs/machash/template
+    ./xbps-src setup
+    ./xbps-src pkgbuild machash
 
 ## Testing
 

@@ -6,9 +6,11 @@
 #   fuzz    - build and run the deterministic fuzz harness
 #   lint    - static analysis of C sources, shell scripts, line widths
 #   man     - render the man page to check it is well-formed groff
-#   dist    - build the versioned source tarball (release asset)
-#   install - copy the binary and man page into $(PREFIX)
-#   clean   - remove build outputs
+#   dist      - build the versioned source tarball (release asset)
+#   packages  - build all the OS packages (see the package-* targets)
+#   package-* - build one OS package from the release source tarball
+#   install   - copy the binary and man page into $(PREFIX)
+#   clean     - remove build outputs
 
 # Default to cosmocc (overridable on the command line).
 CC      = cosmocc
@@ -170,6 +172,57 @@ dist:
 	@rm -rf $(BUILD)/sdist
 	@echo "wrote $(DIST)/$(PROG)-$(VERSION).tar.gz"
 
+# OS package builds. Each target builds one package from the
+# release source tarball for $(VERSION), which the tag workflow
+# publishes, so run them after the tag is published. The build
+# host needs the tools of each ecosystem; see docs/packaging.md.
+packages: package-nixos package-void package-alpine package-debian \
+          package-opensuse package-fedora package-arch package-homebrew
+
+package-nixos:
+	nix build --impure --expr \
+	  '(import <nixpkgs> {}).callPackage \
+	   (import packaging/nixos/default.nix) {}'
+
+package-void:
+	@if [ ! -d $(BUILD)/void-packages/.git ]; then \
+	  git clone --depth 1 \
+	    https://github.com/void-linux/void-packages \
+	    $(BUILD)/void-packages; \
+	fi
+	$(BUILD)/void-packages/xbps-src setup
+	mkdir -p $(BUILD)/void-packages/srcpkgs/$(PROG)
+	cp packaging/void/machash.template \
+	  $(BUILD)/void-packages/srcpkgs/$(PROG)/template
+	$(BUILD)/void-packages/xbps-src pkgbuild $(PROG)
+
+package-alpine:
+	cd packaging/alpine && abuild
+
+package-debian: dist
+	rm -rf $(BUILD)/debian
+	mkdir -p $(BUILD)/debian
+	cp $(DIST)/$(PROG)-$(VERSION).tar.gz \
+	  $(BUILD)/debian/$(PROG)_$(VERSION).orig.tar.gz
+	dpkg-source -x $(BUILD)/debian/$(PROG)_$(VERSION).orig.tar.gz \
+	  $(BUILD)/debian
+	cp -r packaging/debian \
+	  $(BUILD)/debian/$(PROG)-$(VERSION)/debian
+	dpkg-buildpackage -us -uc -b -F \
+	  $(BUILD)/debian/$(PROG)-$(VERSION)
+
+package-opensuse:
+	rpmbuild -bb packaging/opensuse/machash.spec
+
+package-fedora:
+	rpmbuild -bb packaging/fedora/machash.spec
+
+package-arch:
+	makepkg -s -C packaging/arch
+
+package-homebrew:
+	brew install --build-from-source packaging/homebrew/machash.rb
+
 install: build
 	mkdir -p $(PREFIX)/bin $(PREFIX)/man/man1
 	cp $(DIST)/$(PROG) $(PREFIX)/bin/$(PROG)
@@ -179,4 +232,6 @@ clean:
 	rm -rf $(DIST) $(BUILD)
 
 .PHONY: all build test fuzz lint lint-c lint-sh lint-width man dist \
-        install clean
+        packages package-nixos package-void package-alpine \
+        package-debian package-opensuse package-fedora package-arch \
+        package-homebrew install clean

@@ -1,0 +1,84 @@
+# Template file for 'machash'
+pkgname=machash
+version=1.0.1
+revision=1
+hostmakedepends="make curl unzip"
+distfiles="https://github.com/MrDrMcCoy/machash/releases/" \
+  "download/v${version}/${pkgname}-${version}.tar.gz"
+checksum=__SDIST_SHA256__
+short_desc="Hash arbitrary strings into MAC addresses"
+maintainer="MrDrMcCoy <MrDrMcCoy@users.noreply.github.com>"
+license="BSD-3-Clause"
+homepage="https://github.com/MrDrMcCoy/machash"
+
+# The binary is a single-file static universal binary built with
+# cosmocc 4.0.2, which is downloaded at build time. The cosmocc
+# helper tools are Cosmopolitan (APE) binaries. A build host has
+# no APE binfmt handler, so each helper is run through the APE
+# loader for this architecture, which ships inside the cosmocc
+# zip.
+#
+# The test suite runs in the upstream CI. It does not run in the
+# build chroot, which has no APE binfmt handler.
+do_build() {
+	cd ${workdir}/${pkgname}-${version}
+	curl -fsSL -o cosmocc.zip \
+		"https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip"
+	mkdir -p cosmo
+	unzip -q cosmocc.zip -d cosmo
+	local t
+	for t in apelink fixupobj pecheck mktemper \
+		x86_64-linux-cosmo-gcc aarch64-linux-cosmo-gcc; do
+		mv "cosmo/bin/${t}" "cosmo/bin/${t}.ape"
+		{
+			printf '#!/bin/sh\n'
+			printf 'exec "$(dirname "$0")/ape-%s.elf" ' "$(uname -m)"
+			printf '"$(dirname "$0")/%s.ape" "$@"\n' "${t}"
+		} > "cosmo/bin/${t}"
+		chmod +x "cosmo/bin/${t}"
+	done
+	make build CC="${PWD}/cosmo/bin/cosmocc"
+}
+
+do_install() {
+	cd ${workdir}/${pkgname}-${version}
+	vinstall -d 755 usr/bin
+	vinstall -d 755 usr/lib/machash
+	vinstall -d 755 usr/share/man/man1
+	vinstall -d 755 usr/share/doc/${pkgname}
+	vinstall -d 755 usr/share/licenses/${pkgname}
+	vinstall -m 755 -h dist/machash usr/bin
+	vinstall -m 755 -h "cosmo/bin/ape-$(uname -m).elf" usr/lib/machash/ape
+	vinstall -m 644 -h man/machash.1 usr/share/man/man1
+	vinstall -m 644 -h LICENSE usr/share/licenses/${pkgname}
+	vinstall -m 644 -h readme.md changelog.md dependencies.md \
+		usr/share/doc/${pkgname}
+	vinstall -m 644 -h docs/*.md usr/share/doc/${pkgname}
+}
+
+post_install() {
+	# Register the APE binfmt handler if it is not present.
+	if [ ! -e /proc/sys/fs/binfmt_misc/APE ]; then
+		if [ ! -d /proc/sys/fs/binfmt_misc ]; then
+			mount -t binfmt_misc none /proc/sys/fs/binfmt_misc 2>/dev/null || true
+		fi
+		if [ -d /proc/sys/fs/binfmt_misc ]; then
+			echo ':APE:M::MZqFpD::/usr/lib/machash/ape:' \
+				> /proc/sys/fs/binfmt_misc/register
+		else
+			echo "warning: could not register the APE handler; " \
+				"machash needs it to run" >&2
+		fi
+	fi
+}
+
+pre_deinstall() {
+	# Unregister the APE handler if this package registered it.
+	if [ -r /proc/sys/fs/binfmt_misc/APE ]; then
+		local interp
+		interp=$(awk -F: '{print $NF}' /proc/sys/fs/binfmt_misc/APE)
+		if [ "${interp}" = "/usr/lib/machash/ape" ]; then
+			echo '-APE' > /proc/sys/fs/binfmt_misc/register
+		fi
+	fi
+}
