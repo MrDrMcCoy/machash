@@ -2,8 +2,8 @@ class Machash < Formula
   desc "Hash arbitrary strings into MAC addresses"
   homepage "https://github.com/MrDrMcCoy/machash"
   url "https://github.com/MrDrMcCoy/machash/releases/" \
-      "download/v1.0.1/machash-1.0.1.tar.gz"
-  sha256 "32733b8eb3ab5b5edac12a12896475cb1333d7dfc1e57a6e46fb544ed5bcd81b"
+      "download/v1.0.2/machash-1.0.2.tar.gz"
+  sha256 "971429a3de578cb937920925bb4c7e8978abc9ae4d14c7b1340bc4712e3733b2"
   license "BSD-3-Clause"
   depends_on "curl"
   depends_on "unzip"
