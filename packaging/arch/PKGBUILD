@@ -1,0 +1,58 @@
+# machash - hash strings into MAC addresses.
+#
+# The binary is a single-file static universal binary built with
+# cosmocc. The cosmocc helper tools are Cosmopolitan (APE)
+# binaries. A build host has no APE binfmt handler, so each helper
+# is run through the APE loader for this architecture. At install
+# time the APE handler is registered so the binary can run on the
+# host.
+#
+# The test suite runs in the upstream CI. It does not run in the
+# build environment, which has no APE binfmt handler.
+
+pkgname=machash
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Hash arbitrary strings into MAC addresses"
+arch=(x86_64 aarch64)
+url="https://github.com/MrDrMcCoy/machash"
+license=(BSD-3-Clause)
+depends=()
+makedepends=(curl unzip)
+install=machash.install
+source=("https://github.com/MrDrMcCoy/machash/releases/"
+        "download/v${pkgver}/${pkgname}-${pkgver}.tar.gz")
+sha256sums=('144ff28570b0e999dca1c88d7f2cacafe84d0e4e855bc3343b190a0d87616234')
+
+build() {
+	cd "${srcdir}/${pkgname}-${pkgver}"
+	curl -fsSL -o cosmocc.zip \
+		"https://cosmo.zip/pub/cosmocc/cosmocc-4.0.2.zip"
+	mkdir -p cosmo
+	unzip -q cosmocc.zip -d cosmo
+	local t
+	for t in apelink fixupobj pecheck mktemper \
+		x86_64-linux-cosmo-gcc aarch64-linux-cosmo-gcc; do
+		mv "cosmo/bin/${t}" "cosmo/bin/${t}.ape"
+		{
+			printf '#!/bin/sh\n'
+			printf 'exec "$(dirname "$0")/ape-%s.elf" ' "$(uname -m)"
+			printf '"$(dirname "$0")/%s.ape" "$@"\n' "${t}"
+		} > "cosmo/bin/${t}"
+		chmod +x "cosmo/bin/${t}"
+	done
+	make build CC="${PWD}/cosmo/bin/cosmocc"
+}
+
+package() {
+	cd "${srcdir}/${pkgname}-${pkgver}"
+	install -Dm755 dist/machash "${pkgdir}/usr/bin/machash"
+	install -Dm755 "cosmo/bin/ape-$(uname -m).elf" \
+		"${pkgdir}/usr/lib/machash/ape"
+	install -Dm644 man/machash.1 "${pkgdir}/usr/share/man/man1/machash.1"
+	install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+	install -Dm644 readme.md "${pkgdir}/usr/share/doc/${pkgname}/readme.md"
+	install -Dm644 changelog.md dependencies.md \
+		"${pkgdir}/usr/share/doc/${pkgname}/"
+	install -Dm644 docs/*.md "${pkgdir}/usr/share/doc/${pkgname}/"
+}

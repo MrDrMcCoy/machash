@@ -1,0 +1,48 @@
+#!/usr/bin/make -f
+
+# The binary is a single-file static universal binary built with
+# cosmocc. The cosmocc helper tools are Cosmopolitan (APE)
+# binaries. A build host has no APE binfmt handler, so each helper
+# is run through the APE loader for this architecture.
+
+COSMOCC = 4.0.2
+ARCH = $(shell uname -m)
+
+build:
+	dh_testdir
+	curl -fsSL -o cosmocc.zip \
+	  https://cosmo.zip/pub/cosmocc/cosmocc-$(COSMOCC).zip
+	mkdir -p cosmo
+	unzip -q cosmocc.zip -d cosmo
+	for t in apelink fixupobj pecheck mktemper \
+	  x86_64-linux-cosmo-gcc aarch64-linux-cosmo-gcc; do \
+	  mv cosmo/bin/$$t cosmo/bin/$$t.ape; \
+	  { \
+	    printf '#!/bin/sh\n'; \
+	    printf 'exec "$$(dirname "$$0")/ape-$(ARCH).elf" '; \
+	    printf '"$$(dirname "$$0")/%s.ape" "$$@"\n' $$t; \
+	  } > cosmo/bin/$$t; \
+	  chmod +x cosmo/bin/$$t; \
+	done
+	make build CC=$$PWD/cosmo/bin/cosmocc
+
+clean:
+	dh_testdir
+	rm -rf cosmocc.zip cosmo dist build
+
+install:
+	dh_testroot
+	install -d debian/machash/usr/bin \
+	  debian/machash/usr/lib/machash \
+	  debian/machash/usr/share/man/man1 \
+	  debian/machash/usr/share/doc/machash \
+	  debian/machash/DEBIAN
+	install -m 755 dist/machash debian/machash/usr/bin/machash
+	install -m 755 cosmo/bin/ape-$(ARCH).elf \
+	  debian/machash/usr/lib/machash/ape
+	gzip -9c man/machash.1 \
+	  > debian/machash/usr/share/man/man1/machash.1.gz
+	install -m 644 LICENSE debian/machash/usr/share/doc/machash/copyright
+	gzip -9c debian/changelog \
+	  > debian/machash/usr/share/doc/machash/changelog.Debian.gz
+	install -m 755 debian/postinst debian/prerm debian/machash/DEBIAN/

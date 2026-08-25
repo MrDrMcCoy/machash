@@ -86,6 +86,14 @@ See docs/outputs.md for the bit semantics and the multicast warning,
 docs/hostname.md for hostname mode, docs/check.md for check mode,
 and docs/hash.md for the Bobcat algorithm details.
 
+## Packaging
+
+Packages for Homebrew, Alpine, Debian, OpenSuSE, Fedora, and Arch
+live in packaging/. Each one builds the universal binary from the
+release source tarball, which `make dist` produces. See
+docs/packaging.md for how the build works and how to build each
+package.
+
 ## Testing and development
 
     make test    # unit + oracle + integration tests

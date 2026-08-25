@@ -1,0 +1,17 @@
+Source: machash
+Section: utils
+Priority: optional
+Maintainer: MrDrMcCoy <MrDrMcCoy@users.noreply.github.com>
+Build-Depends: debhelper, curl, unzip
+Standards-Version: 4.6.2
+Homepage: https://github.com/MrDrMcCoy/machash
+
+Package: machash
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: hash strings into MAC addresses
+ machash hashes input strings with the 48-bit Bobcat hash and
+ prints the result as a colon-separated MAC address. The address
+ is fake, but it has the form of a valid MAC address. This is
+ useful for deriving a stable, deterministic MAC address from any
+ string.

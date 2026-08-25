@@ -1,0 +1,12 @@
+#!/bin/sh
+# Unregister the APE binfmt handler if this package registered it.
+set -e
+
+if [ "$1" = "0" ] && [ -r /proc/sys/fs/binfmt_misc/APE ]; then
+    interp=$(awk -F: '{print $NF}' /proc/sys/fs/binfmt_misc/APE)
+    if [ "$interp" = "/usr/lib/machash/ape" ]; then
+        echo '-APE' > /proc/sys/fs/binfmt_misc/register
+    fi
+fi
+
+exit 0

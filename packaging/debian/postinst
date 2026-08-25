@@ -1,0 +1,18 @@
+#!/bin/sh
+# Register the APE binfmt handler so the machash binary can run.
+set -e
+
+if [ ! -e /proc/sys/fs/binfmt_misc/APE ]; then
+    if [ ! -d /proc/sys/fs/binfmt_misc ]; then
+        mount -t binfmt_misc none /proc/sys/fs/binfmt_misc 2>/dev/null || true
+    fi
+    if [ -d /proc/sys/fs/binfmt_misc ]; then
+        echo ':APE:M::MZqFpD::/usr/lib/machash/ape:' \
+            > /proc/sys/fs/binfmt_misc/register
+    else
+        echo "warning: could not register the APE handler; " \
+            "machash needs it to run" >&2
+    fi
+fi
+
+exit 0
