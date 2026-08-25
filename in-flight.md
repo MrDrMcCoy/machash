@@ -4,14 +4,17 @@ Records work in progress so another agent can resume interrupted work.
 
 ## Current
 
-None. v0.4.0 is released (2026-08-25). See changelog.md.
+None. v0.5.0 is released (2026-08-25). See changelog.md.
 
 ## Notes for the next agent
 
 - Toolchain: cosmocc 4.0.2 in ~/.local/bin. Run `make build`,
-  `make test`, `make lint`.
-- Lint tools: shellcheck and cppcheck in ~/.local/bin (cppcheck via a
-  nix profile under ~/.local/nix).
+  `make test`, `make lint`, `make fuzz`.
+- Lint tools: shellcheck and cppcheck in ~/.local/bin (cppcheck is a
+  pip wheel installed in ~/venv, symlinked into ~/.local/bin).
+- The fuzz harness is deterministic (splitmix64). For a deeper pass
+  run `make fuzz FUZZ_ARGS="-runs=1000000 -seed=<n>"`. A nonzero
+  exit is a UBSan abort or a crash.
 - Expected hash values in tests/integration.sh come from the
   certified independent oracle (tests/ref/). Regenerate them with
   `printf '%s' STR | build/bobcat_ref` if the oracle changes.

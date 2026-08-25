@@ -2,10 +2,6 @@
 
 Planned work for machash. Completed items move to changelog.md.
 
-## 0.5.0
-
-- [ ] Fuzz harness for the argument parser and hash
-
 ## 1.0.0
 
 - [ ] Man page
@@ -13,6 +9,9 @@ Planned work for machash. Completed items move to changelog.md.
 
 # Done
 
+- 0.5.0 - deterministic fuzz harness for the argument parser and
+  hash, UBSan in abort mode. Found and fixed an undefined left
+  shift in the Bobcat key schedule. See changelog.md.
 - 0.4.0 - hostname input mode (-n, --hostname) and per-interface
   MACs (-i, --interface). Test suite fix for expected failures.
   See changelog.md.

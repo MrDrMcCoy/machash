@@ -89,6 +89,7 @@ and docs/hash.md for the Bobcat algorithm details.
 
     make test    # unit + oracle + integration tests
     make lint    # cppcheck, shellcheck, 80-column check
+    make fuzz    # deterministic fuzz harness (hash + arg parser)
 
 Expected test values come from the independent Bobcat oracle in
 tests/ref/. tests/ref/check_oracle.sh certifies the oracle against

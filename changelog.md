@@ -7,6 +7,31 @@ to [Semantic Versioning][semver].
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-25
+
+### Added
+
+- Fuzz harness for the argument parser and the Bobcat hash
+  (tests/fuzz/). cosmocc has no libFuzzer mode, so the harness is a
+  small deterministic, splitmix64-driven generator with libFuzzer
+  style -runs/-seed flags. Both targets build with UBSan in abort
+  mode. `make fuzz` runs 100000 inputs per target, and the CI test
+  job runs a 20000-input session.
+
+### Changed
+
+- MAC address parsing moved from src/machash.c to a small module,
+  src/mac.c (mac_parse), so the fuzz target exercises the real
+  validator.
+
+### Fixed
+
+- Undefined behavior in the Bobcat key schedule: (~x[1]) << 5 and
+  (~x[7]) << 5 left-shift a negative int. The new fuzz harness found
+  it on its first run. The words are now masked to 16 bits before
+  the shift; the digest is unchanged (all published vectors and all
+  integration expectations still match).
+
 ## [0.4.0] - 2026-08-25
 
 ### Added
